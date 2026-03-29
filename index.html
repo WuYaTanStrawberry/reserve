@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-  <title>舞夜天草莓園預約系統</title>
+  <title>舞夜天高架草莓園預約系統</title>
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_red.css">
@@ -40,22 +40,22 @@
 
 <div id="overlay">
   <div class="spinner"></div>
-  <div style="margin-top:15px; color:var(--main); font-weight:bold;">🍓 正在連線舞夜天...</div>
+  <div style="margin-top:15px; color:var(--main); font-weight:bold;">🍓 正在連線中...</div>
 </div>
 
 <div class="container">
-  <h2>🍓 舞夜天草莓園</h2>
-  <div class="subtitle">苗栗大湖 | 高架草莓預約系統</div>
+  <h2>🍓 舞夜天高架草莓園</h2>
+  <div class="subtitle">苗栗大湖 | 預約採草莓系統</div>
 
   <div class="step-box">
-    <span class="step-title">1. 選擇預約日期 (限當週)</span>
+    <span class="step-title">1. 選擇當週預約日期 (週一二公休)</span>
     <div class="calendar-wrapper">
       <input type="text" id="datePicker" style="display:none;">
     </div>
   </div>
 
   <div id="step2" class="step-box">
-    <span class="step-title">2. 選擇梯次 (🚗 顯示剩餘車位)</span>
+    <span class="step-title">2. 選擇時段 (🚗 顯示剩餘車位)</span>
     <select id="time" onchange="showStep3()">
       <option value="">請選擇時段</option>
     </select>
@@ -66,7 +66,7 @@
       <span class="step-title">3. 填寫聯絡資料</span>
       <input type="text" id="name" placeholder="預約人姓名">
       <input type="tel" id="phone" placeholder="手機號碼">
-      <div style="font-size:13px; color:#777; margin-bottom:5px;">預約車數 (每梯次上限 10 車)：</div>
+      <div style="font-size:13px; color:#777; margin-bottom:5px;">預約車數，每時段上限10車，不限人數 (機車請填0)：</div>
       <input type="number" id="cars" value="1" min="1" max="10">
     </div>
     <button class="btn" id="submitBtn" onclick="submitBooking()">確認送出預約</button>
@@ -113,7 +113,7 @@
       
       // 🍓 處理後端傳回的特殊狀態
       if (data.error === "close_manual") {
-        alert("🍓 舞夜天公告：目前草莓產量調整中，暫不開放預約，敬請見諒！");
+        alert("🍓 舞夜天公告：目前草莓不夠多，暫不開放預約，敬請見諒！");
         window.location.reload(); return;
       }
       if (data.error === "not_yet_open") {
@@ -128,7 +128,7 @@
         const opt = document.createElement('option');
         opt.value = t;
         opt.disabled = (remain <= 0);
-        opt.innerText = `${t} (${remain <= 0 ? '❌ 滿位' : '🚗 剩 ' + remain + ' 車'})`;
+        opt.innerText = `${t} (${remain <= 0 ? '❌ 此時段已額滿' : '🚗 剩 ' + remain + ' 台車'})`;
         timeSel.appendChild(opt);
       });
     } catch (e) { 

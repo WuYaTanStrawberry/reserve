@@ -45,8 +45,8 @@
       <span class="step-title">3. 填寫聯絡資料</span>
       <input type="text" id="name" placeholder="預約人姓名">
       <input type="tel" id="phone" placeholder="手機號碼">
-      <div style="font-size:13px; color:#777; margin-bottom:5px;">預約車數 (上限 10 台)：</div>
-      <input type="number" id="cars" value="1" min="1" max="10">
+      <div style="font-size:13px; color:#777; margin-bottom:5px;">🚗 預約汽車數量 (騎機車請填 0)：</div>
+      <input type="number" id="cars" value="1" min="0" max="10" inputmode="numeric">
     </div>
     <button class="btn" id="submitBtn" onclick="submitBooking()">確認送出預約</button>
   </div>
@@ -98,7 +98,14 @@
 
   async function submitBooking() {
     const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
-    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value, cars = document.getElementById('cars').value;
+    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value;
+    let cars = parseInt(document.getElementById('cars').value);
+
+    // 🍓 車數檢查：允許 0 到 10
+    if (isNaN(cars) || cars < 0 || cars > 10) {
+      alert("🚗 預約汽車數量請填寫 0 到 10 之間的數字喔！(騎機車請填 0)");
+      return;
+    }
     if (!name || !date || !time || !phone) return alert("請填寫完整資訊！");
 
     document.getElementById('overlay').style.display = 'flex';
@@ -111,7 +118,7 @@
       alert("🍓 預約已成功！請確認 LINE 通知。");
       window.location.reload();
     } catch (e) {
-      alert("🍓 預約已送出！請確認 LINE 通知。");
+      alert("🍓 預約已成功送出！請確認 LINE 通知。");
       window.location.reload();
     }
   }

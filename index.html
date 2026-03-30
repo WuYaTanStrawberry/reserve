@@ -10,55 +10,67 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
   <style>
-    :root { --main: #e63946; --bg: #fdf2f4; }
+    :root { --main: #e63946; --bg: #fdf2f4; --disabled: #e0e0e0; }
     body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; }
     .container { background: white; max-width: 100%; margin: auto; border-radius: 20px; padding: 15px; box-sizing: border-box; box-shadow: 0 5px 15px rgba(230,57,70,0.1); }
     h2 { color: var(--main); text-align: center; font-size: 1.4rem; margin: 10px 0 5px 0; }
     .subtitle { text-align: center; color: #888; font-size: 12px; margin-bottom: 15px; }
     
-    /* 🍓 解決裁切問題的關鍵：強制月曆縮放 */
-    .calendar-wrapper { 
-      display: flex; 
-      justify-content: center; 
-      margin-bottom: 15px; 
-      overflow: hidden;
-    }
+    .calendar-wrapper { display: flex; justify-content: center; margin-bottom: 15px; overflow: hidden; }
+    
+    /* 🍓 月曆高對比度自定義樣式 */
     .flatpickr-calendar {
-      transform: scale(0.9); /* 縮小到 90% 以符合手機寬度 */
+      transform: scale(0.95);
       transform-origin: top center;
-      margin-top: -10px;
-      margin-bottom: -20px;
-      box-shadow: none !important;
-      border: 1px solid #eee !important;
+      border: 2px solid var(--main) !important; /* 增加邊框感 */
+    }
+
+    /* 1. 【不可選日期】：淡灰色 + 取消線 */
+    .flatpickr-day.flatpickr-disabled, 
+    .flatpickr-day.flatpickr-disabled:hover {
+      color: #ccc !important;
+      text-decoration: line-through;
+      background: transparent !important;
+      border-color: transparent !important;
+    }
+
+    /* 2. 【可選擇日期】：字體加粗 + 醒目深色 */
+    .flatpickr-day:not(.flatpickr-disabled) {
+      color: #000 !important;
+      font-weight: 800 !important; /* 極粗體 */
+      font-size: 16px !important;
+    }
+
+    /* 3. 【今日日期】：給一個框線 */
+    .flatpickr-day.today {
+      border-color: var(--main) !important;
+    }
+
+    /* 4. 【選中日期】：深紅色背景 */
+    .flatpickr-day.selected {
+      background: var(--main) !important;
+      color: white !important;
+      border: none !important;
     }
 
     .step-box { border-left: 4px solid var(--main); padding-left: 12px; margin-bottom: 15px; }
     .step-title { font-weight: bold; color: #333; display: block; margin-bottom: 6px; font-size: 14px; }
     input, select { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; margin-bottom: 10px; }
     .btn { width: 100%; background: var(--main); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 18px; font-weight: bold; }
-    #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
   </style>
 </head>
 <body>
-
-<div id="overlay"><div>🍓 處理中...</div></div>
-
 <div class="container">
   <h2>🍓 舞夜天草莓園</h2>
   <div class="subtitle">苗栗大湖 | 高架草莓預約</div>
-
   <div class="step-box">
     <span class="step-title">1. 選擇日期 (僅開放本週)</span>
-    <div class="calendar-wrapper">
-      <input type="text" id="datePicker" style="display:none;">
-    </div>
+    <div class="calendar-wrapper"><input type="text" id="datePicker" style="display:none;"></div>
   </div>
-
   <div id="step2" class="step-box" style="display:none;">
     <span class="step-title">2. 選擇時段</span>
     <select id="time" onchange="document.getElementById('step3').style.display='block'"></select>
   </div>
-
   <div id="step3" style="display:none;">
     <div class="step-box">
       <span class="step-title">3. 基本資料</span>
@@ -67,7 +79,7 @@
       <div style="font-size:12px; color:#777;">🚗 汽車數量 (機車填 0)：</div>
       <input type="number" id="cars" value="1" min="0" max="10">
     </div>
-    <button class="btn" onclick="submitBooking()">送出預約</button>
+    <button class="btn" onclick="submitBooking()">確認預約</button>
   </div>
 </div>
 
@@ -80,14 +92,12 @@
 
   document.addEventListener("DOMContentLoaded", function() {
     flatpickr("#datePicker", {
-      locale: "zh",
-      inline: true,
-      minDate: "today",
-      // 🍓 這裡維持您的限制：只開放到本週日
+      locale: "zh", inline: true, minDate: "today",
       enable: [function(date) {
         const now = new Date(); now.setHours(0,0,0,0);
         const daysToSun = (now.getDay() === 0) ? 0 : 7 - now.getDay();
         const sun = new Date(now); sun.setDate(now.getDate() + daysToSun);
+        // 排除週一(1)、週二(2)
         return (date >= now && date <= sun && date.getDay() !== 1 && date.getDay() !== 2);
       }],
       onChange: (sel, str) => { if(str) fetchSlots(str); }
@@ -103,25 +113,18 @@
     timeSel.innerHTML = '<option value="">請選擇時段</option>';
     ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"].forEach(t => {
       const rem = data[t].remaining;
-      const opt = new Option(`${t} (${rem <= 0 ? '❌滿' : '🚗剩'+rem})`, t);
+      const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
       opt.disabled = (rem <= 0); timeSel.add(opt);
     });
   }
 
   async function submitBooking() {
     const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
-    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value;
-    const cars = document.getElementById('cars').value;
-    if(!name || !phone || !date || !time) return alert("請填寫完整！");
-
-    document.getElementById('overlay').style.display = 'flex';
+    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value, cars = document.getElementById('cars').value;
+    if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
     const profile = await liff.getProfile();
-    await fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
-    });
-    alert("🍓 預約成功！");
-    window.location.reload();
+    await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars }) });
+    alert("🍓 預約成功！"); window.location.reload();
   }
 </script>
 </body>

@@ -120,6 +120,26 @@
     } catch (e) {
       alert("🍓 預約已成功送出！請確認 LINE 通知。");
       window.location.reload();
+      
+    let userId = "guest_user"; // 預設值
+  try {
+    // 只有在 LINE 環境內才抓 profile
+    if (liff.isLoggedIn()) {
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+    }
+  } catch (e) {
+    console.log("非 LINE 環境或未授權，以遊客身分預約");
+  }
+
+  // 送出預約 (即使沒有 userId 也會送出)
+  await fetch(GAS_URL, {
+    method: "POST",
+    body: JSON.stringify({ userId, name, phone, date, time, cars })
+  });
+  
+  alert("🍓 預約已成功送出！");
+  window.location.reload();
     }
   }
 </script>

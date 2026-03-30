@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>舞夜天草莓園預約</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_red.css">
@@ -11,44 +11,63 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
   <style>
     :root { --main: #e63946; --bg: #fdf2f4; }
-    body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 15px; margin: 0; }
-    .container { background: white; max-width: 450px; margin: auto; border-radius: 25px; padding: 25px; box-shadow: 0 10px 25px rgba(230,57,70,0.1); }
-    h2 { color: var(--main); text-align: center; margin-bottom: 5px; }
-    .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 20px; }
-    .calendar-wrapper { display: flex; justify-content: center; margin-bottom: 20px; border-radius: 15px; overflow: hidden; border: 1px solid #eee; }
-    .step-box { border-left: 4px solid var(--main); padding-left: 15px; margin-bottom: 20px; }
-    .step-title { font-weight: bold; color: #333; display: block; margin-bottom: 8px; font-size: 15px; }
-    #step2, #step3 { display: none; animation: fadeIn 0.5s forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    input, select { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; background: #fafafa; margin-bottom: 12px; }
-    .btn { width: 100%; background: var(--main); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; }
+    body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; }
+    .container { background: white; max-width: 100%; margin: auto; border-radius: 20px; padding: 15px; box-sizing: border-box; box-shadow: 0 5px 15px rgba(230,57,70,0.1); }
+    h2 { color: var(--main); text-align: center; font-size: 1.4rem; margin: 10px 0 5px 0; }
+    .subtitle { text-align: center; color: #888; font-size: 12px; margin-bottom: 15px; }
+    
+    /* 🍓 解決裁切問題的關鍵：強制月曆縮放 */
+    .calendar-wrapper { 
+      display: flex; 
+      justify-content: center; 
+      margin-bottom: 15px; 
+      overflow: hidden;
+    }
+    .flatpickr-calendar {
+      transform: scale(0.9); /* 縮小到 90% 以符合手機寬度 */
+      transform-origin: top center;
+      margin-top: -10px;
+      margin-bottom: -20px;
+      box-shadow: none !important;
+      border: 1px solid #eee !important;
+    }
+
+    .step-box { border-left: 4px solid var(--main); padding-left: 12px; margin-bottom: 15px; }
+    .step-title { font-weight: bold; color: #333; display: block; margin-bottom: 6px; font-size: 14px; }
+    input, select { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; margin-bottom: 10px; }
+    .btn { width: 100%; background: var(--main); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 18px; font-weight: bold; }
     #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; flex-direction: column; justify-content: center; align-items: center; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--main); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-<div id="overlay"><div class="spinner"></div><div style="margin-top:15px; color:var(--main); font-weight:bold;">🍓 連線中...</div></div>
+
+<div id="overlay"><div>🍓 處理中...</div></div>
+
 <div class="container">
   <h2>🍓 舞夜天草莓園</h2>
-  <div class="subtitle">苗栗大湖 | 高架草莓預約系統</div>
+  <div class="subtitle">苗栗大湖 | 高架草莓預約</div>
+
   <div class="step-box">
-    <span class="step-title">1. 選擇日期 (限當週)</span>
-    <div class="calendar-wrapper"><input type="text" id="datePicker" style="display:none;"></div>
-  </div>
-  <div id="step2" class="step-box">
-    <span class="step-title">2. 選擇預約梯次</span>
-    <select id="time" onchange="showStep3()"><option value="">請選擇時段</option></select>
-  </div>
-  <div id="step3">
-    <div class="step-box">
-      <span class="step-title">3. 填寫聯絡資料</span>
-      <input type="text" id="name" placeholder="預約人姓名">
-      <input type="tel" id="phone" placeholder="手機號碼">
-      <div style="font-size:13px; color:#777; margin-bottom:5px;">🚗 預約汽車數量 (騎機車請填 0)：</div>
-      <input type="number" id="cars" value="1" min="0" max="10" inputmode="numeric">
+    <span class="step-title">1. 選擇日期 (僅開放本週)</span>
+    <div class="calendar-wrapper">
+      <input type="text" id="datePicker" style="display:none;">
     </div>
-    <button class="btn" id="submitBtn" onclick="submitBooking()">確認送出預約</button>
+  </div>
+
+  <div id="step2" class="step-box" style="display:none;">
+    <span class="step-title">2. 選擇時段</span>
+    <select id="time" onchange="document.getElementById('step3').style.display='block'"></select>
+  </div>
+
+  <div id="step3" style="display:none;">
+    <div class="step-box">
+      <span class="step-title">3. 基本資料</span>
+      <input type="text" id="name" placeholder="姓名">
+      <input type="tel" id="phone" placeholder="電話">
+      <div style="font-size:12px; color:#777;">🚗 汽車數量 (機車填 0)：</div>
+      <input type="number" id="cars" value="1" min="0" max="10">
+    </div>
+    <button class="btn" onclick="submitBooking()">送出預約</button>
   </div>
 </div>
 
@@ -56,14 +75,15 @@
   const LIFF_ID = "2009638018-NaOpldtQ"; 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbz7LPNXpDHPnJwz8a6GJsCC0vgsZW3FMgwHq1JGLPkWlXGBUGHn32XevwlduDrlOLGHog/exec"; 
 
-  async function initLiff() {
-    try { await liff.init({ liffId: LIFF_ID }); } catch (e) { console.error(e); }
-  }
+  async function initLiff() { await liff.init({ liffId: LIFF_ID }); }
   window.onload = initLiff;
 
   document.addEventListener("DOMContentLoaded", function() {
     flatpickr("#datePicker", {
-      locale: "zh", inline: true, minDate: "today", dateFormat: "Y-m-d",
+      locale: "zh",
+      inline: true,
+      minDate: "today",
+      // 🍓 這裡維持您的限制：只開放到本週日
       enable: [function(date) {
         const now = new Date(); now.setHours(0,0,0,0);
         const daysToSun = (now.getDay() === 0) ? 0 : 7 - now.getDay();
@@ -77,70 +97,31 @@
   async function fetchSlots(dateStr) {
     const timeSel = document.getElementById('time');
     document.getElementById('step2').style.display = 'block';
-    timeSel.innerHTML = '<option>🔍 查詢中...</option>';
-    try {
-      const res = await fetch(`${GAS_URL}?queryDate=${dateStr}`);
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error === "close_manual" ? "🍓 產量調整中，暫不開放預約！" : "🍓 週一中午 12:00 開放當週預約！");
-        window.location.reload(); return;
-      }
-      timeSel.innerHTML = '<option value="">請選擇時段</option>';
-      ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"].forEach(t => {
-        const rem = data[t].remaining;
-        const opt = new Option(`${t} (${rem <= 0 ? '❌ 滿位' : '🚗 剩 ' + rem + ' 車'})`, t);
-        opt.disabled = (rem <= 0); timeSel.add(opt);
-      });
-    } catch (e) { alert("連線失敗！"); }
+    timeSel.innerHTML = '<option>查詢中...</option>';
+    const res = await fetch(`${GAS_URL}?queryDate=${dateStr}`);
+    const data = await res.json();
+    timeSel.innerHTML = '<option value="">請選擇時段</option>';
+    ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"].forEach(t => {
+      const rem = data[t].remaining;
+      const opt = new Option(`${t} (${rem <= 0 ? '❌滿' : '🚗剩'+rem})`, t);
+      opt.disabled = (rem <= 0); timeSel.add(opt);
+    });
   }
-
-  function showStep3() { if(document.getElementById('time').value) document.getElementById('step3').style.display = 'block'; }
 
   async function submitBooking() {
     const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
     const date = document.getElementById('datePicker').value, time = document.getElementById('time').value;
-    let cars = parseInt(document.getElementById('cars').value);
-
-    // 🍓 車數檢查：允許 0 到 10
-    if (isNaN(cars) || cars < 0 || cars > 10) {
-      alert("🚗 預約汽車數量請填寫 0 到 10 之間的數字喔！(騎機車請填 0)");
-      return;
-    }
-    if (!name || !date || !time || !phone) return alert("請填寫完整資訊！");
+    const cars = document.getElementById('cars').value;
+    if(!name || !phone || !date || !time) return alert("請填寫完整！");
 
     document.getElementById('overlay').style.display = 'flex';
-    try {
-      const profile = await liff.getProfile();
-      await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
-      });
-      alert("🍓 預約已成功！請確認 LINE 通知。");
-      window.location.reload();
-    } catch (e) {
-      alert("🍓 預約已成功送出！請確認 LINE 通知。");
-      window.location.reload();
-      
-    let userId = "guest_user"; // 預設值
-  try {
-    // 只有在 LINE 環境內才抓 profile
-    if (liff.isLoggedIn()) {
-      const profile = await liff.getProfile();
-      userId = profile.userId;
-    }
-  } catch (e) {
-    console.log("非 LINE 環境或未授權，以遊客身分預約");
-  }
-
-  // 送出預約 (即使沒有 userId 也會送出)
-  await fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify({ userId, name, phone, date, time, cars })
-  });
-  
-  alert("🍓 預約已成功送出！");
-  window.location.reload();
-    }
+    const profile = await liff.getProfile();
+    await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
+    });
+    alert("🍓 預約成功！");
+    window.location.reload();
   }
 </script>
 </body>

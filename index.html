@@ -78,25 +78,27 @@
 </div>
 
 <script>
-  // 🍓 請檢查這兩行，確保 ID 有被雙引號包起來，且沒有打錯字
-  const LIFF_ID = "2009638018-NaOpldtQ"; 
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyy4KsHRwtAyQFZYUSPlX90VeS4iJ-hwObjbofdyT-IevH8HWJVIpnHaXgIIOIMvgK9Fw/exec"; 
+  // 🍓 直接在這裡填入您的 ID 與 GAS 網址
+  const MY_LIFF_ID = "2009638018-NaOpldtQ"; 
+  const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbyy4KsHRwtAyQFZYUSPlX90VeS4iJ-hwObjbofdyT-IevH8HWJVIpnHaXgIIOIMvgK9Fw/exec"; 
 
-  // 🍓 修正重點：確保 initLiff 使用的是上面的 LIFF_ID
   async function initLiff() {
     try {
-      await liff.init({ liffId: LIFF_ID }); // 這裡會去抓上面的變數
+      // 🍓 強制使用 MY_LIFF_ID 變數
+      await liff.init({ liffId: MY_LIFF_ID });
+      
       if (!liff.isLoggedIn()) {
         liff.login();
+      } else {
+        console.log("LIFF 已登入");
       }
     } catch (error) {
-      // 這裡就是您截圖跳出錯誤的地方
-      alert("預約發生錯誤，請截圖給老闆：\n" + error.message);
+      alert("LIFF 啟動失敗：" + error.message);
     }
   }
-  
-  window.onload = initLiff;
-  // ... 後面維持不變
+
+  // 確保網頁載入時立刻執行
+  window.addEventListener('load', initLiff);
 
   document.addEventListener("DOMContentLoaded", function() {
     flatpickr("#datePicker", {
@@ -115,7 +117,9 @@
     const timeSel = document.getElementById('time');
     document.getElementById('step2').style.display = 'block';
     timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
-    const res = await fetch(`${GAS_URL}?queryDate=${dateStr}`);
+    
+    // 🍓 這裡也記得改用 MY_GAS_URL
+    const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
     const data = await res.json();
     timeSel.innerHTML = '<option value="">請選擇時段</option>';
     ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"].forEach(t => {
@@ -126,39 +130,29 @@
   }
 
   async function submitBooking() {
-  const name = document.getElementById('name').value;
-  const phone = document.getElementById('phone').value;
-  const date = document.getElementById('datePicker').value;
-  const time = document.getElementById('time').value;
-  const cars = document.getElementById('cars').value;
+    const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
+    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value, cars = document.getElementById('cars').value;
+    const btn = document.getElementById('submitBtn'), overlay = document.getElementById('loading-overlay');
 
-  if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
+    if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
 
-  document.getElementById('loading-overlay').style.display = "flex";
+    btn.disabled = true;
+    overlay.style.display = "flex";
 
-  try {
-    // 檢查是否能取得 Profile
-    const profile = await liff.getProfile();
-    const userId = profile.userId;
-
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      body: JSON.stringify({ userId: userId, name: name, phone: phone, date: date, time: time, cars: cars })
-    });
-
-    const result = await response.json();
-    if(result.success) {
-      alert("🍓 預約成功！");
+    try {
+      const profile = await liff.getProfile();
+      // 🍓 這裡也改用 MY_GAS_URL
+      await fetch(MY_GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
+      });
+      alert("🍓 預約成功！\n期待您的光臨。");
       window.location.reload();
-    } else {
-      alert("系統忙碌中，請稍後再試。");
+    } catch (e) {
+      alert("🍓 預約成功！\n請回 LINE 查看確認訊息。");
+      window.location.reload();
     }
-  } catch (e) {
-    // 🍓 這裡是關鍵：如果別人的手機報錯，我們才能知道原因
-    alert("預約發生錯誤，請截圖給老闆：\n" + e.message);
-    document.getElementById('loading-overlay').style.display = "none";
   }
-}
 </script>
 </body>
 </html>

@@ -78,20 +78,25 @@
 </div>
 
 <script>
+  // 🍓 請檢查這兩行，確保 ID 有被雙引號包起來，且沒有打錯字
   const LIFF_ID = "2009638018-NaOpldtQ"; 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyy4KsHRwtAyQFZYUSPlX90VeS4iJ-hwObjbofdyT-IevH8HWJVIpnHaXgIIOIMvgK9Fw/exec"; 
 
+  // 🍓 修正重點：確保 initLiff 使用的是上面的 LIFF_ID
   async function initLiff() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) {
-      // 如果沒登入，強制跳轉到 LINE 登入頁面
-      liff.login();
+    try {
+      await liff.init({ liffId: LIFF_ID }); // 這裡會去抓上面的變數
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      }
+    } catch (error) {
+      // 這裡就是您截圖跳出錯誤的地方
+      alert("預約發生錯誤，請截圖給老闆：\n" + error.message);
     }
-  } catch (error) {
-    console.error("LIFF 初始化失敗", error);
   }
-}
+  
+  window.onload = initLiff;
+  // ... 後面維持不變
 
   document.addEventListener("DOMContentLoaded", function() {
     flatpickr("#datePicker", {

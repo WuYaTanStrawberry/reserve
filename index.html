@@ -81,8 +81,17 @@
   const LIFF_ID = "2009638018-NaOpldtQ"; 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyy4KsHRwtAyQFZYUSPlX90VeS4iJ-hwObjbofdyT-IevH8HWJVIpnHaXgIIOIMvgK9Fw/exec"; 
 
-  async function initLiff() { await liff.init({ liffId: LIFF_ID }); }
-  window.onload = initLiff;
+  async function initLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      // 如果沒登入，強制跳轉到 LINE 登入頁面
+      liff.login();
+    }
+  } catch (error) {
+    console.error("LIFF 初始化失敗", error);
+  }
+}
 
   document.addEventListener("DOMContentLoaded", function() {
     flatpickr("#datePicker", {
@@ -112,29 +121,39 @@
   }
 
   async function submitBooking() {
-    const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
-    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value;
-    const cars = document.getElementById('cars').value;
-    const btn = document.getElementById('submitBtn'), overlay = document.getElementById('loading-overlay');
+  const name = document.getElementById('name').value;
+  const phone = document.getElementById('phone').value;
+  const date = document.getElementById('datePicker').value;
+  const time = document.getElementById('time').value;
+  const cars = document.getElementById('cars').value;
 
-    if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
+  if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
 
-    btn.disabled = true;
-    overlay.style.display = "flex";
+  document.getElementById('loading-overlay').style.display = "flex";
 
-    try {
-      const profile = await liff.getProfile();
-      await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
-      });
-      alert("🍓 預約成功！\n期待您的光臨。");
+  try {
+    // 檢查是否能取得 Profile
+    const profile = await liff.getProfile();
+    const userId = profile.userId;
+
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({ userId: userId, name: name, phone: phone, date: date, time: time, cars: cars })
+    });
+
+    const result = await response.json();
+    if(result.success) {
+      alert("🍓 預約成功！");
       window.location.reload();
-    } catch (e) {
-      alert("🍓 預約成功！\n請回 LINE 查看確認訊息。");
-      window.location.reload();
+    } else {
+      alert("系統忙碌中，請稍後再試。");
     }
+  } catch (e) {
+    // 🍓 這裡是關鍵：如果別人的手機報錯，我們才能知道原因
+    alert("預約發生錯誤，請截圖給老闆：\n" + e.message);
+    document.getElementById('loading-overlay').style.display = "none";
   }
+}
 </script>
 </body>
 </html>

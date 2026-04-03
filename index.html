@@ -114,20 +114,42 @@
   });
 
   async function fetchSlots(dateStr) {
-    const timeSel = document.getElementById('time');
-    document.getElementById('step2').style.display = 'block';
-    timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
+  const timeSel = document.getElementById('time');
+  document.getElementById('step2').style.display = 'block';
+  timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
+  
+  const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
+  const data = await res.json();
+  
+  timeSel.innerHTML = '<option value="">請選擇時段</option>';
+  
+  // 🍓 取得現在的時間資訊
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+  const currentHour = now.getHours();
+
+  const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+
+  timeSlots.forEach(t => {
+    const slotHour = parseInt(t.split(":")[0]);
+    const rem = data[t].remaining;
     
-    // 🍓 這裡也記得改用 MY_GAS_URL
-    const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
-    const data = await res.json();
-    timeSel.innerHTML = '<option value="">請選擇時段</option>';
-    ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"].forEach(t => {
-      const rem = data[t].remaining;
+    // 🍓 核心邏輯：如果是今天，且時段小時小於等於現在的小時，就「不顯示」或「禁用」
+    // 例如下午 3 點 (15:00)，則 15:00 以前的選項都會被處理
+    const isPast = (dateStr === todayStr && slotHour <= currentHour);
+
+    if (!isPast) {
       const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
-      opt.disabled = (rem <= 0); timeSel.add(opt);
-    });
+      opt.disabled = (rem <= 0); 
+      timeSel.add(opt);
+    }
+  });
+  
+  // 如果今天剩下的時段都過期了，給個提示
+  if (timeSel.options.length <= 1) {
+    timeSel.innerHTML = '<option value="">今日預約已截止，請選其他日期</option>';
   }
+}
 
   async function submitBooking() {
     const name = document.getElementById('name').value, phone = document.getElementById('phone').value;

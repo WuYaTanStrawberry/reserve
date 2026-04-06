@@ -175,6 +175,36 @@
       window.location.reload();
     }
   }
+  document.addEventListener("DOMContentLoaded", function() {
+  // 1. 🍓 檢查是否為「預約禁區」：星期一 12:00 以前
+  const now = new Date();
+  const day = now.getDay(); // 0:日, 1:一, 2:二...
+  const hour = now.getHours();
+
+  // 如果今天是星期一 (1) 且 小時小於 12
+  if (day === 1 && hour < 12) {
+    alert("🍓 舞夜天提醒您：\n每週採果預約於「週一中午 12:00」準時開放，請稍後再來預約喔！🦆");
+    // 您可以選擇隱藏預約表單，避免誤點
+    document.getElementById('booking-form').style.opacity = "0.3";
+    document.getElementById('booking-form').style.pointerEvents = "none";
+  }
+
+  // 2. 原有的 Flatpickr 設定 (維持您現有的邏輯)
+  flatpickr("#datePicker", {
+    locale: "zh", 
+    inline: true, 
+    minDate: "today",
+    enable: [function(date) {
+      const checkNow = new Date();
+      // 確保週一 12:00 前不給選 (現有邏輯)
+      if (checkNow.getDay() === 1 && checkNow.getHours() < 12) return false;
+      
+      // 您的其他規則：不開放週一、週二等
+      return (date.getDay() !== 1 && date.getDay() !== 2);
+    }],
+    onChange: (sel, str) => { if(str) fetchSlots(str); }
+  });
+});
 </script>
 </body>
 </html>

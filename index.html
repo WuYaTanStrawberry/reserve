@@ -45,7 +45,19 @@
   </style>
 </head>
 <body>
+  
+<div id="closed-announcement" style="display: none; text-align: center; padding: 50px 20px;">
+    <h2 style="color: #E63946;">🍓 預約即將開放</h2>
+    <p>舞夜天感謝您的支持！</p>
+    <div style="background: #FFF5F5; padding: 20px; border-radius: 15px; margin: 20px 0;">
+        <p style="font-weight: bold; font-size: 18px;">🔓 開放時間：</p>
+        <p style="color: #D62828; font-size: 20px; font-weight: bold;">每週一 中午 12:00</p>
+    </div>
+    <p>現在是果園整理時間，請稍後再來喔！🦆</p>
+</div>
 
+<div id="booking-form">
+    </div>
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div class="loading-text">🍓 正在為您預約中...</div>
@@ -176,34 +188,26 @@
     }
   }
   document.addEventListener("DOMContentLoaded", function() {
-  // 1. 🍓 檢查是否為「預約禁區」：星期一 12:00 以前
-  const now = new Date();
-  const day = now.getDay(); // 0:日, 1:一, 2:二...
-  const hour = now.getHours();
+    const now = new Date();
+    const day = now.getDay(); // 0:日, 1:一
+    const hour = now.getHours();
+    
+    const announcement = document.getElementById('closed-announcement');
+    const form = document.getElementById('booking-form');
 
-  // 如果今天是星期一 (1) 且 小時小於 12
-  if (day === 1 && hour < 12) {
-    alert("🍓 舞夜天提醒您：\n每週採果預約於「週一中午 12:00」準時開放，請稍後再來預約喔！");
-    // 您可以選擇隱藏預約表單，避免誤點
-    document.getElementById('booking-form').style.opacity = "0.3";
-    document.getElementById('booking-form').style.pointerEvents = "none";
-  }
-
-  // 2. 原有的 Flatpickr 設定 (維持您現有的邏輯)
-  flatpickr("#datePicker", {
-    locale: "zh", 
-    inline: true, 
-    minDate: "today",
-    enable: [function(date) {
-      const checkNow = new Date();
-      // 確保週一 12:00 前不給選 (現有邏輯)
-      if (checkNow.getDay() === 1 && checkNow.getHours() < 12) return false;
-      
-      // 您的其他規則：不開放週一、週二等
-      return (date.getDay() !== 1 && date.getDay() !== 2);
-    }],
-    onChange: (sel, str) => { if(str) fetchSlots(str); }
-  });
+    // 🍓 2. 判斷是否為「週一中午 12 點前」
+    if (day === 1 && hour < 12) {
+        // 隱藏表單，顯示公告
+        form.style.display = "none";
+        announcement.style.display = "block";
+    } else {
+        // 正常顯示表單，隱藏公告
+        form.style.display = "block";
+        announcement.style.display = "none";
+        
+        // 執行原有的 Flatpickr 初始化...
+        initBookingPage(); 
+    }
 });
 </script>
 </body>

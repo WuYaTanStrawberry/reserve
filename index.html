@@ -73,16 +73,20 @@
     </div>
 
 <div id="booking-form">
+    
     <div style="text-align: center; margin-bottom: 20px;">
-        <span style="font-size: 40px;">🍓</span> 
-        <h2 style="color: #E63946;">舞夜天高架草莓園</h2>
-        <p style="color: #888;">苗栗大湖 | 採草莓預約</p>
-    </div>
+    <img src="https://i.imgur.com/https://i.postimg.cc/SKXR9xH2/wei-ming-ming-(1).png" width="80" style="border-radius: 50%;"> 
+    
+    <h2 style="color: #E63946; margin-top: 10px;">舞夜天高架草莓園</h2>
+    <p style="color: #888;">苗栗大湖 | 採草莓預約</p>
+</div>
+  
+    <input type="text" id="datePicker" readonly>
 
-    <div class="step-group">
-        <h3 class="step-title">1. 選擇日期 (僅開放本週)</h3>
-        <input type="text" id="datePicker" readonly>
+    <div class="step-group" style="margin-top: 10px;">
+        <h3 class="step-title" style="margin-top: 20px;">1. 選擇日期 (僅開放本週)</h3>
     </div>
+    
     </div>
 
   <div id="step2" class="step-box" style="display:none;">
@@ -131,38 +135,47 @@
   const hour = now.getHours();
 
   // ---------------------------------------------------------
-  // 🍓 【開關切換區】
-  // true  => 顯示「草莓季結束」
-  // false => 顯示「預約準備中」(限週一12點前) 或 「正常預約」
-  const isOffSeason = false; 
+  // 🍓 【舞夜天狀態切換區】
+  // 請修改下方的引號內的文字來切換模式：
+  // "open"     => 正常預約模式 (週一12:00前會自動顯示預約準備中)
+  // "off"      => 產季結束模式 (顯示11月見)
+  // "weather"  => 天氣影響模式 (顯示臨時休園)
+  const statusMode = "open"; 
   // ---------------------------------------------------------
 
-  const isMondayWaiting = (day === 1 && hour < 12);
-
-  if (isOffSeason) {
-    // 🌸 模式：草莓季結束 (true)
+  if (statusMode === "off") {
+    // 🌸 模式 1：產季結束
     form.style.display = "none";
     announcement.style.display = "block";
     title.innerText = "🍓 本季採果已結束";
-    subtitle.innerText = "📅 預計下次開放時間：";
+    subtitle.innerText = "📅 預計下季開放：";
     text.innerHTML = "2026 年 11 月<br>期待再與大家見面！";
   } 
-  else if (isMondayWaiting) {
-    // ⏳ 模式：週一排隊中 (false 且 週一早上)
+  else if (statusMode === "weather") {
+    // ⛈️ 模式 2：天氣影響臨時休園
     form.style.display = "none";
     announcement.style.display = "block";
-    title.innerText = "🍓 預約準備中";
-    subtitle.innerText = "🔓 本週開放預約時間：";
-    text.innerHTML = "每週一 中午 12:00<br>請準時再來喔！";
-  } 
+    title.innerText = "🍓 臨時休園公告";
+    subtitle.innerText = "📢 休園原因：";
+    text.innerHTML = "因受近期天氣影響，<br>本週草莓成熟不及，<br>暫停開放預約一週，敬請見諒！";
+  }
   else {
-    // ✅ 模式：正常營業
-    form.style.display = "block";
-    announcement.style.display = "none";
-    setTimeout(initMyCalendar, 100);
+    // ✅ 模式 3：正常產季模式 (含週一排隊邏輯)
+    const isMondayWaiting = (day === 1 && hour < 12);
+    
+    if (isMondayWaiting) {
+      form.style.display = "none";
+      announcement.style.display = "block";
+      title.innerText = "🍓 預約準備中";
+      subtitle.innerText = "🔓 本週開放預約時間：";
+      text.innerHTML = "每週一 中午 12:00<br>請準時再來喔！";
+    } else {
+      form.style.display = "block";
+      announcement.style.display = "none";
+      setTimeout(initMyCalendar, 100);
+    }
   }
 });
-
   // --- 3. 日曆設定（含限制當週邏輯） ---
   function initMyCalendar() {
     const input = document.getElementById("datePicker");

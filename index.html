@@ -247,46 +247,93 @@
     });
   }
   
-// 🍓 當時段選好後，自動顯示步驟三
-function showStep3() {
-    const timeVal = document.getElementById('time').value;
-    const step3 = document.getElementById('step3');
-    if (timeVal && step3) {
-        step3.style.display = 'block';
-    }
-}
-  // --- 4. 抓取剩餘時段 ---
-  async function fetchSlots(dateStr) {
-    const timeSel = document.getElementById('time');
-    const step2 = document.getElementById('step2');
-    if(step2) step2.style.display = 'block';
-    timeSel.innerHTML = '<option>🔍 查詢中...</option>';
+// --- 4. 抓取剩餘時段 (整合機車預約邏輯) ---
+async function fetchSlots(dateStr) {
+  const timeSel = document.getElementById('time');
+  const step2 = document.getElementById('step2');
+  const step3 = document.getElementById('step3');
+
+  // 每次重選日期時，先藏起第三步並重置時段
+  if(step2) step2.style.display = 'block';
+  if(step3) step3.style.display = 'none';
+  timeSel.innerHTML = '<option>🔍 查詢中...</option>';
+  
+  try {
+    const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
+    const data = await res.json();
+    timeSel.innerHTML = '<option value="">請選擇時段</option>';
     
-    try {
-      const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
-      const data = await res.json();
-      timeSel.innerHTML = '<option value="">請選擇時段</option>';
+    const now = new Date();
+    // 格式化今天日期 yyyy-mm-dd
+    const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+    const currentHour = now.getHours();
+    const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+
+    timeSlots.forEach(t => {
+      const slotHour = parseInt(t.split(":")[0]);
+      const rem = data[t] ? data[t].remaining : 0;
       
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
-      const currentHour = now.getHours();
-      const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+      // 判斷是否為過去的時段
+      const isPast = (dateStr === todayStr && slotHour <= currentHour);
 
-      timeSlots.forEach(t => {
-        const slotHour = parseInt(t.split(":")[0]);
-        const rem = data[t] ? data[t].remaining : 0;
-        const isPast = (dateStr === todayStr && slotHour <= currentHour);
-
-        if (!isPast) {
-          const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
-          opt.disabled = (rem <= 0); 
-          timeSel.add(opt);
+      if (!isPast) {
+        // 🍓 這裡不再 disabled，而是把剩餘數存入 data-rem
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.setAttribute('data-rem', rem);
+        
+        if (rem <= 0) {
+          opt.textContent = `${t} (🚗滿位，僅限機車)`;
+        } else {
+          opt.textContent = `${t} (🚗剩餘 ${rem} 車位)`;
         }
-      });
-    } catch(e) {
-      timeSel.innerHTML = '<option>讀取失敗，請重選日期</option>';
+        timeSel.appendChild(opt);
+      }
+    });
+    
+    if (timeSel.options.length <= 1) {
+      timeSel.innerHTML = '<option>今日已無可預約時段</option>';
     }
+
+  } catch(e) {
+    console.error(e);
+    timeSel.innerHTML = '<option>讀取失敗，請重選日期</option>';
   }
+}
+
+// 🍓 別忘了也要放這個函式，用來處理步驟三的連動
+function showStep3() {
+    const timeSel = document.getElementById('time');
+    const selectedOpt = timeSel.options[timeSel.selectedIndex];
+    const step3 = document.getElementById('step3');
+    const carSel = document.getElementById('cars');
+    
+    if (!timeSel.value || timeSel.value.includes("讀取")) {
+        if(step3) step3.style.display = 'none';
+        return;
+    }
+
+    // 取得該時段剩下的車位數 (從 data-rem 抓取)
+    const remaining = parseInt(selectedOpt.getAttribute('data-rem')) || 0;
+    
+    // 清空並重新產生車輛選單
+    carSel.innerHTML = '';
+    
+    if (remaining > 0) {
+        // 最多到 9 台，但不超過剩餘車位
+        const maxCanSelect = Math.min(9, remaining);
+        for (let i = 1; i <= maxCanSelect; i++) {
+            const opt = new Option(`${i} 台`, i);
+            carSel.add(opt);
+        }
+    }
+    
+    // 永遠加入機車選項
+    const motoOpt = new Option("機車 (不佔汽車位)", "0");
+    carSel.add(motoOpt);
+
+    if(step3) step3.style.display = 'block';
+}
 
   // --- 5. 送出預約 ---
   async function submitBooking() {

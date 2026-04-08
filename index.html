@@ -42,6 +42,10 @@
     input, select { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; margin-bottom: 10px; }
     .btn:disabled { background: #ccc !important; }
     .btn { width: 100%; background: var(--main); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; transition: 0.3s; }
+ /* 🍓 強制隱藏所有 Flatpickr 的日曆彈出視窗 */
+.flatpickr-calendar {
+    display: none !important;
+}
   </style>
 </head>
 <body>
@@ -118,17 +122,27 @@
   window.addEventListener('load', initLiff);
 
   document.addEventListener("DOMContentLoaded", function() {
-    flatpickr("#datePicker", {
-      locale: "zh", inline: true, minDate: "today",
-      enable: [function(date) {
-        const now = new Date(); now.setHours(0,0,0,0);
-        const daysToSun = (now.getDay() === 0) ? 0 : 7 - now.getDay();
-        const sun = new Date(now); sun.setDate(now.getDate() + daysToSun);
-        return (date >= now && date <= sun && date.getDay() !== 1 && date.getDay() !== 2);
-      }],
-      onChange: (sel, str) => { if(str) fetchSlots(str); }
-    });
-  });
+    const announcement = document.getElementById('closed-announcement');
+    const form = document.getElementById('booking-form');
+
+    // 🍓 如果想要現在完全關閉，直接改為 true
+    const isClosed = true; 
+
+    if (isClosed) {
+        // 隱藏表單（含日曆）
+        form.style.display = "none";
+        // 顯示公告
+        announcement.style.display = "block";
+    } else {
+        // 隱藏公告
+        announcement.style.display = "none";
+        // 顯示表單
+        form.style.display = "block";
+        
+        // 只有在表單顯示時，才去執行日曆初始化
+        initMyCalendar();
+    }
+});
 
   async function fetchSlots(dateStr) {
   const timeSel = document.getElementById('time');

@@ -61,14 +61,10 @@
 </div>
 
 <div id="booking-form">
-    <h3 class="step-title">1. 選擇日期 (僅開放本週)</h3>
-    
+    <h3>請選擇預約日期</h3>
     <input type="text" id="datePicker" placeholder="點擊選擇日期">
     
-    <div id="step2" style="display:none;">
-        <h3 class="step-title">2. 選擇時段</h3>
-        <select id="time">...</select>
-    </div>
+    <div id="step2">...</div>
 </div>
   
 <div id="booking-form">
@@ -105,93 +101,123 @@
 </div>
 
 <script>
-  // 🍓 直接在這裡填入您的 ID 與 GAS 網址
+  // 🍓 設定區
   const MY_LIFF_ID = "2009638018-NaOpldtQ"; 
   const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbwLLI5Tg3lgdvkZk9DBhevyhmqf-F5vfzChbPOLZdJV3DD5O8div1QhF2EaU6BuIwYDgA/exec"; 
 
+  // --- 1. LIFF 啟動 ---
   async function initLiff() {
     try {
-      // 🍓 強制使用 MY_LIFF_ID 變數
       await liff.init({ liffId: MY_LIFF_ID });
-      
       if (!liff.isLoggedIn()) {
         liff.login();
       } else {
         console.log("LIFF 已登入");
       }
     } catch (error) {
-      alert("LIFF 啟動失敗：" + error.message);
+      console.error("LIFF 啟動失敗：" + error.message);
     }
   }
-
-  // 確保網頁載入時立刻執行
   window.addEventListener('load', initLiff);
 
+  // --- 2. 頁面顯示邏輯與日曆初始化 ---
   document.addEventListener("DOMContentLoaded", function() {
     const announcement = document.getElementById('closed-announcement');
     const form = document.getElementById('booking-form');
+    const msgText = document.getElementById('announcement-text');
 
-    // 🍓 如果想要現在完全關閉，直接改為 true
-    const isClosed = true; 
+    const now = new Date();
+    const day = now.getDay();
+    const hour = now.getHours();
 
-    if (isClosed) {
-        // 隱藏表單（含日曆）
-        form.style.display = "none";
-        // 顯示公告
-        announcement.style.display = "block";
-    } else {
-        // 隱藏公告
-        announcement.style.display = "none";
-        // 顯示表單
-        form.style.display = "block";
-        
-        // 只有在表單顯示時，才去執行日曆初始化
+    // 🍓 產季狀態控制：測試時請改 false，產季結束請改 true
+    const isOffSeason = false; 
+    const isMondayWaiting = (day === 1 && hour < 12);
+
+    if (isOffSeason) {
+      form.style.display = "none";
+      announcement.style.display = "block";
+      if(msgText) msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
+    } 
+    else if (isMondayWaiting) {
+      form.style.display = "none";
+      announcement.style.display = "block";
+      if(msgText) msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
+    } 
+    else {
+      form.style.display = "block";
+      announcement.style.display = "none";
+      
+      // 確保容器顯示後再初始化日曆
+      setTimeout(() => {
         initMyCalendar();
-    }
-});
-
-  async function fetchSlots(dateStr) {
-  const timeSel = document.getElementById('time');
-  document.getElementById('step2').style.display = 'block';
-  timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
-  
-  const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
-  const data = await res.json();
-  
-  timeSel.innerHTML = '<option value="">請選擇時段</option>';
-  
-  // 🍓 取得現在的時間資訊
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
-  const currentHour = now.getHours();
-
-  const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
-
-  timeSlots.forEach(t => {
-    const slotHour = parseInt(t.split(":")[0]);
-    const rem = data[t].remaining;
-    
-    // 🍓 核心邏輯：如果是今天，且時段小時小於等於現在的小時，就「不顯示」或「禁用」
-    // 例如下午 3 點 (15:00)，則 15:00 以前的選項都會被處理
-    const isPast = (dateStr === todayStr && slotHour <= currentHour);
-
-    if (!isPast) {
-      const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
-      opt.disabled = (rem <= 0); 
-      timeSel.add(opt);
+      }, 50);
     }
   });
-  
-  // 如果今天剩下的時段都過期了，給個提示
-  if (timeSel.options.length <= 1) {
-    timeSel.innerHTML = '<option value="">今日預約已截止，請選其他日期</option>';
-  }
-}
 
+  // --- 3. 日曆設定函式 ---
+  function initMyCalendar() {
+    const input = document.getElementById("datePicker");
+    if (!input) return;
+
+    flatpickr("#datePicker", {
+      locale: "zh",
+      inline: true,
+      minDate: "today",
+      // 禁止選擇週一(1)與週二(2)
+      enable: [
+        function(date) {
+          return date.getDay() !== 1 && date.getDay() !== 2;
+        }
+      ],
+      onChange: (selectedDates, dateStr) => {
+        if (dateStr) fetchSlots(dateStr);
+      }
+    });
+  }
+
+  // --- 4. 抓取剩餘時段 ---
+  async function fetchSlots(dateStr) {
+    const timeSel = document.getElementById('time');
+    document.getElementById('step2').style.display = 'block';
+    timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
+    
+    const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
+    const data = await res.json();
+    
+    timeSel.innerHTML = '<option value="">請選擇時段</option>';
+    
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+    const currentHour = now.getHours();
+    const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+
+    timeSlots.forEach(t => {
+      const slotHour = parseInt(t.split(":")[0]);
+      const rem = data[t].remaining;
+      const isPast = (dateStr === todayStr && slotHour <= currentHour);
+
+      if (!isPast) {
+        const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
+        opt.disabled = (rem <= 0); 
+        timeSel.add(opt);
+      }
+    });
+    
+    if (timeSel.options.length <= 1) {
+      timeSel.innerHTML = '<option value="">今日預約已截止，請選其他日期</option>';
+    }
+  }
+
+  // --- 5. 送出預約 ---
   async function submitBooking() {
-    const name = document.getElementById('name').value, phone = document.getElementById('phone').value;
-    const date = document.getElementById('datePicker').value, time = document.getElementById('time').value, cars = document.getElementById('cars').value;
-    const btn = document.getElementById('submitBtn'), overlay = document.getElementById('loading-overlay');
+    const name = document.getElementById('name').value;
+    const phone = document.getElementById('phone').value;
+    const date = document.getElementById('datePicker').value;
+    const time = document.getElementById('time').value;
+    const cars = document.getElementById('cars').value;
+    const btn = document.getElementById('submitBtn');
+    const overlay = document.getElementById('loading-overlay');
 
     if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
 
@@ -200,7 +226,6 @@
 
     try {
       const profile = await liff.getProfile();
-      // 🍓 這裡也改用 MY_GAS_URL
       await fetch(MY_GAS_URL, {
         method: "POST",
         body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
@@ -212,69 +237,6 @@
       window.location.reload();
     }
   }
-  document.addEventListener("DOMContentLoaded", function() {
-  const announcement = document.getElementById('closed-announcement');
-  const form = document.getElementById('booking-form');
-  const msgText = document.getElementById('announcement-text'); // 假設公告內有個標籤放文字
-
-  const now = new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
-
-  // 🍓 【設定 1】是否為休眠期（產季結束）？
-  // 現在是 4 月，設為 true。等 11 月開季，把這行改成 false 即可。
-  const isOffSeason = false; 
-
-  // 🍓 【設定 2】是否為週一 12 點前的排隊時間？
-  const isMondayWaiting = (day === 1 && hour < 12);
-
-  if (isOffSeason) {
-    // 🌸 產季結束模式
-    form.style.display = "none";
-    announcement.style.display = "block";
-    msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
-  } 
-  else if (isMondayWaiting) {
-    // ⏳ 週一排隊模式
-    form.style.display = "none";
-    announcement.style.display = "block";
-    msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
-  } 
-  else {
-    // ✅ 正常預約模式
-    form.style.display = "block";
-    announcement.style.display = "none";
-    initMyCalendar(); 
-  }
-});
-// 將原本的 Flatpickr 設定封裝成一個函式
-  } else {
-    form.style.display = "block";
-    announcement.style.display = "none";
-    
-    // 延遲 50 毫秒再啟動日曆，確保容器已經準備好
-    setTimeout(() => {
-        initMyCalendar();
-    }, 50);
-}
-function initMyCalendar() {
-    // 🍓 先檢查網頁上是否有 datePicker 這個 ID
-    const input = document.getElementById("datePicker");
-    if (!input) {
-        console.error("找不到 datePicker 元素！");
-        return;
-    }
-
-    flatpickr("#datePicker", {
-        locale: "zh",
-        inline: true, // 🍓 確保日曆是直接展開，而不是點擊才跳出
-        minDate: "today",
-        // 您的其他 enable 邏輯...
-        onChange: (selectedDates, dateStr) => {
-            if (dateStr) fetchSlots(dateStr);
-        }
-    });
-}
 </script>
 </body>
 </html>

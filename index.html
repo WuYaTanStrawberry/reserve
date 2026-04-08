@@ -110,35 +110,49 @@
 
   // --- 2. 頁面顯示邏輯 ---
   document.addEventListener("DOMContentLoaded", function() {
-    const announcement = document.getElementById('closed-announcement');
-    const form = document.getElementById('booking-form');
-    const msgText = document.getElementById('announcement-text');
+  const announcement = document.getElementById('closed-announcement');
+  const form = document.getElementById('booking-form');
+  const msgText = document.getElementById('announcement-text');
 
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
+  const now = new Date();
+  const day = now.getDay();   // 1 是星期一
+  const hour = now.getHours();
 
-    // 🍓 狀態控制：測試時請改 false
-    const isOffSeason = true; 
-    const isMondayWaiting = (day === 1 && hour < 12);
+  // ---------------------------------------------------------
+  // 🍓 【開關切換區】
+  // true  => 顯示「草莓季結束」
+  // false => 顯示「預約準備中」(限週一12點前) 或 「正常預約」
+  const isOffSeason = true; 
+  // ---------------------------------------------------------
 
-    if (isOffSeason) {
-      form.style.display = "none";
-      announcement.style.display = "block";
-      if(msgText) msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
-    } 
-    else if (isMondayWaiting) {
-      form.style.display = "none";
-      announcement.style.display = "block";
-      if(msgText) msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
-    } 
-    else {
-      form.style.display = "block";
-      announcement.style.display = "none";
-      // 延遲一下下確保容器已顯示，避免出現兩個日曆
-      setTimeout(initMyCalendar, 100);
-    }
-  });
+  const isMondayWaiting = (day === 1 && hour < 12);
+
+  if (isOffSeason) {
+    // 🌸 模式 A：草莓季結束 (當 isOffSeason 為 true 時)
+    form.style.display = "none";
+    announcement.style.display = "block";
+    if(msgText) msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
+    console.log("目前狀態：產季結束公告中");
+  } 
+  else if (isMondayWaiting) {
+    // ⏳ 模式 B：預約準備中 (當 isOffSeason 為 false 且是週一早上時)
+    form.style.display = "none";
+    announcement.style.display = "block";
+    if(msgText) msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
+    console.log("目前狀態：週一預約排隊中");
+  } 
+  else {
+    // ✅ 模式 C：正常預約 (其他時間)
+    form.style.display = "block";
+    announcement.style.display = "none";
+    
+    // 確保日曆只初始化一次
+    setTimeout(() => {
+        initMyCalendar();
+    }, 100);
+    console.log("目前狀態：開放預約中");
+  }
+});
 
   // --- 3. 日曆設定（含限制當週邏輯） ---
   function initMyCalendar() {

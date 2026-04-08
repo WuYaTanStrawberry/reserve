@@ -43,9 +43,12 @@
     .btn:disabled { background: #ccc !important; }
     .btn { width: 100%; background: var(--main); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; transition: 0.3s; }
  /* 🍓 強制隱藏所有 Flatpickr 的日曆彈出視窗 */
-.flatpickr-calendar {
-    display: none !important;
-}
+.flatpickr-calendar {display: none !important;}
+    /* 🍓 當表單隱藏時，強制把日曆元件也藏起來 */
+#booking-form[style*="display: none"] + .flatpickr-calendar,
+#booking-form[style*="display: none"] ~ .flatpickr-calendar {display: none !important;}
+/* 如果您的日曆是 inline (直接顯示在頁面上)，這一行最有效 */
+.flatpickr-calendar.inline {margin: 0 auto;}
   </style>
 </head>
 <body>
@@ -60,11 +63,17 @@
     <p style="font-size: 14px; color: #888;">現在是果園整理時間，請準時再來喔！🦆</p>
 </div>
 
-<div id="booking-form" style="display: none;">
-    <h3>請選擇預約日期</h3>
+<div id="booking-form">
+    <h3 class="step-title">1. 選擇日期 (僅開放本週)</h3>
+    
     <input type="text" id="datePicker" placeholder="點擊選擇日期">
+    
+    <div id="step2" style="display:none;">
+        <h3 class="step-title">2. 選擇時段</h3>
+        <select id="time">...</select>
     </div>
-
+</div>
+  
 <div id="booking-form">
     </div>
 <div id="loading-overlay">
@@ -207,30 +216,40 @@
     }
   }
   document.addEventListener("DOMContentLoaded", function() {
-    const now = new Date();
-    const day = now.getDay();   // 1 是星期一
-    const hour = now.getHours(); // 現在的小時
-    
-    const announcement = document.getElementById('closed-announcement');
-    const form = document.getElementById('booking-form');
+  const announcement = document.getElementById('closed-announcement');
+  const form = document.getElementById('booking-form');
+  const msgText = document.getElementById('announcement-text'); // 假設公告內有個標籤放文字
 
-    // 🍓 核心判斷：如果是週一 12 點前，或是您現在想直接關閉（淡季）
-    // 如果要測試「完全關閉」，可以把條件改成 if (true) 
-    if (true) {
-        // 顯示公告，隱藏表單
-        announcement.style.display = "block";
-        form.style.display = "none";
-        console.log("🍓 舞夜天：目前非預約時段，已隱藏日曆與表單。");
-    } else {
-        // 時間到了！顯示表單，隱藏公告
-        announcement.style.display = "none";
-        form.style.display = "block";
-        
-        // 🍓 只有這時候才去載入日曆設定
-        initMyCalendar(); 
-    }
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+
+  // 🍓 【設定 1】是否為休眠期（產季結束）？
+  // 現在是 4 月，設為 true。等 11 月開季，把這行改成 false 即可。
+  const isOffSeason = true; 
+
+  // 🍓 【設定 2】是否為週一 12 點前的排隊時間？
+  const isMondayWaiting = (day === 1 && hour < 12);
+
+  if (isOffSeason) {
+    // 🌸 產季結束模式
+    form.style.display = "none";
+    announcement.style.display = "block";
+    msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
+  } 
+  else if (isMondayWaiting) {
+    // ⏳ 週一排隊模式
+    form.style.display = "none";
+    announcement.style.display = "block";
+    msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
+  } 
+  else {
+    // ✅ 正常預約模式
+    form.style.display = "block";
+    announcement.style.display = "none";
+    initMyCalendar(); 
+  }
 });
-
 // 將原本的 Flatpickr 設定封裝成一個函式
 function initMyCalendar() {
     flatpickr("#datePicker", {

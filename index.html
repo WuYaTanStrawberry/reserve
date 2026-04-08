@@ -103,10 +103,12 @@
     </div>
     
     </div>
-    <div id="step2" style="display: none;">
-        <h3 class="step-title">2. 選擇時段</h3>
-        <select id="time">...</select>
+    <div id="step2" style="display: none; margin-top: 20px;">
+    <div style="border-left: 4px solid #E63946; padding-left: 10px; margin-bottom: 10px;">
+        <h3 style="font-size: 16px; margin: 0;">2. 選擇時段</h3>
     </div>
+    <select id="time" class="form-control" onchange="showStep3()"></select>
+</div>
 </div>
 
   <div id="step3" style="display:none; margin-top: 20px;">
@@ -244,7 +246,15 @@
       }
     });
   }
-
+  
+// 🍓 當時段選好後，自動顯示步驟三
+function showStep3() {
+    const timeVal = document.getElementById('time').value;
+    const step3 = document.getElementById('step3');
+    if (timeVal && step3) {
+        step3.style.display = 'block';
+    }
+}
   // --- 4. 抓取剩餘時段 ---
   async function fetchSlots(dateStr) {
     const timeSel = document.getElementById('time');

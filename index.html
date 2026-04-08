@@ -59,14 +59,6 @@
     </div>
     <p style="font-size: 14px; color: #888;">現在是果園整理時間，請準時再來喔！🦆</p>
 </div>
-
-<div id="booking-form">
-    <h3>請選擇預約日期</h3>
-    <input type="text" id="datePicker" placeholder="點擊選擇日期">
-    
-    <div id="step2">...</div>
-</div>
-  
 <div id="booking-form">
     </div>
 <div id="loading-overlay">
@@ -109,18 +101,14 @@
   async function initLiff() {
     try {
       await liff.init({ liffId: MY_LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      } else {
-        console.log("LIFF 已登入");
-      }
+      if (!liff.isLoggedIn()) liff.login();
     } catch (error) {
       console.error("LIFF 啟動失敗：" + error.message);
     }
   }
   window.addEventListener('load', initLiff);
 
-  // --- 2. 頁面顯示邏輯與日曆初始化 ---
+  // --- 2. 頁面顯示邏輯 ---
   document.addEventListener("DOMContentLoaded", function() {
     const announcement = document.getElementById('closed-announcement');
     const form = document.getElementById('booking-form');
@@ -130,7 +118,7 @@
     const day = now.getDay();
     const hour = now.getHours();
 
-    // 🍓 產季狀態控制：測試時請改 false，產季結束請改 true
+    // 🍓 狀態控制：測試時請改 false
     const isOffSeason = false; 
     const isMondayWaiting = (day === 1 && hour < 12);
 
@@ -147,26 +135,31 @@
     else {
       form.style.display = "block";
       announcement.style.display = "none";
-      
-      // 確保容器顯示後再初始化日曆
-      setTimeout(() => {
-        initMyCalendar();
-      }, 50);
+      // 延遲一下下確保容器已顯示，避免出現兩個日曆
+      setTimeout(initMyCalendar, 100);
     }
   });
 
-  // --- 3. 日曆設定函式 ---
+  // --- 3. 日曆設定（含限制當週邏輯） ---
   function initMyCalendar() {
     const input = document.getElementById("datePicker");
-    if (!input) return;
+    if (!input || input.classList.contains("flatpickr-input")) return; // 防止重複初始化
+
+    // 🍓 計算「下週一」作為截止日 (maxDate)
+    const now = new Date();
+    const dayToMonday = (8 - now.getDay()) % 7;
+    const nextMonday = new Date();
+    nextMonday.setDate(now.getDate() + (dayToMonday === 0 ? 7 : dayToMonday));
+    nextMonday.setHours(0, 0, 0, 0);
 
     flatpickr("#datePicker", {
       locale: "zh",
       inline: true,
       minDate: "today",
-      // 禁止選擇週一(1)與週二(2)
+      maxDate: nextMonday, // 🍓 限制只能選到這週結束（下週一前）
       enable: [
         function(date) {
+          // 禁止選擇週一(1)與週二(2)
           return date.getDay() !== 1 && date.getDay() !== 2;
         }
       ],
@@ -179,33 +172,33 @@
   // --- 4. 抓取剩餘時段 ---
   async function fetchSlots(dateStr) {
     const timeSel = document.getElementById('time');
-    document.getElementById('step2').style.display = 'block';
-    timeSel.innerHTML = '<option>🔍 查詢車位中...</option>';
+    const step2 = document.getElementById('step2');
+    if(step2) step2.style.display = 'block';
+    timeSel.innerHTML = '<option>🔍 查詢中...</option>';
     
-    const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
-    const data = await res.json();
-    
-    timeSel.innerHTML = '<option value="">請選擇時段</option>';
-    
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
-    const currentHour = now.getHours();
-    const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+    try {
+      const res = await fetch(`${MY_GAS_URL}?queryDate=${dateStr}`);
+      const data = await res.json();
+      timeSel.innerHTML = '<option value="">請選擇時段</option>';
+      
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+      const currentHour = now.getHours();
+      const timeSlots = ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
 
-    timeSlots.forEach(t => {
-      const slotHour = parseInt(t.split(":")[0]);
-      const rem = data[t].remaining;
-      const isPast = (dateStr === todayStr && slotHour <= currentHour);
+      timeSlots.forEach(t => {
+        const slotHour = parseInt(t.split(":")[0]);
+        const rem = data[t] ? data[t].remaining : 0;
+        const isPast = (dateStr === todayStr && slotHour <= currentHour);
 
-      if (!isPast) {
-        const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
-        opt.disabled = (rem <= 0); 
-        timeSel.add(opt);
-      }
-    });
-    
-    if (timeSel.options.length <= 1) {
-      timeSel.innerHTML = '<option value="">今日預約已截止，請選其他日期</option>';
+        if (!isPast) {
+          const opt = new Option(`${t} (${rem <= 0 ? '❌滿位' : '🚗剩'+rem})`, t);
+          opt.disabled = (rem <= 0); 
+          timeSel.add(opt);
+        }
+      });
+    } catch(e) {
+      timeSel.innerHTML = '<option>讀取失敗，請重選日期</option>';
     }
   }
 
@@ -216,13 +209,10 @@
     const date = document.getElementById('datePicker').value;
     const time = document.getElementById('time').value;
     const cars = document.getElementById('cars').value;
-    const btn = document.getElementById('submitBtn');
-    const overlay = document.getElementById('loading-overlay');
-
     if(!name || !phone || !date || !time) return alert("請填寫完整資訊！");
 
-    btn.disabled = true;
-    overlay.style.display = "flex";
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('loading-overlay').style.display = "flex";
 
     try {
       const profile = await liff.getProfile();
@@ -230,7 +220,7 @@
         method: "POST",
         body: JSON.stringify({ userId: profile.userId, name, phone, date, time, cars })
       });
-      alert("🍓 預約成功！\n期待您的光臨。");
+      alert("🍓 預約成功！");
       window.location.reload();
     } catch (e) {
       alert("🍓 預約成功！\n請回 LINE 查看確認訊息。");

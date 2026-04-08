@@ -42,16 +42,10 @@
     input, select { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; margin-bottom: 10px; }
     .btn:disabled { background: #ccc !important; }
     .btn { width: 100%; background: var(--main); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; transition: 0.3s; }
- /* 🍓 強制隱藏所有 Flatpickr 的日曆彈出視窗 */
-.flatpickr-calendar {display: none !important;}
-    /* 🍓 當表單隱藏時，強制把日曆元件也藏起來 */
-#booking-form[style*="display: none"] + .flatpickr-calendar,
-/* 🍓 修改這部分：只有當公告是 block (顯示) 時，才藏日曆 */
+ /* 🍓 只有當公告區塊顯示時，才把日曆藏起來 */
 #closed-announcement[style*="display: block"] ~ .flatpickr-calendar {display: none !important;}
-/* 確保日曆容器本身是可見的 */
+/* 確保日曆預設是可見的 */
 .flatpickr-calendar {display: block;}
-/* 如果您的日曆是 inline (直接顯示在頁面上)，這一行最有效 */
-.flatpickr-calendar.inline {margin: 0 auto;}
   </style>
 </head>
 <body>
@@ -254,12 +248,31 @@
   }
 });
 // 將原本的 Flatpickr 設定封裝成一個函式
+  } else {
+    form.style.display = "block";
+    announcement.style.display = "none";
+    
+    // 延遲 50 毫秒再啟動日曆，確保容器已經準備好
+    setTimeout(() => {
+        initMyCalendar();
+    }, 50);
+}
 function initMyCalendar() {
+    // 🍓 先檢查網頁上是否有 datePicker 這個 ID
+    const input = document.getElementById("datePicker");
+    if (!input) {
+        console.error("找不到 datePicker 元素！");
+        return;
+    }
+
     flatpickr("#datePicker", {
         locale: "zh",
-        inline: true, // 讓日曆直接顯示
+        inline: true, // 🍓 確保日曆是直接展開，而不是點擊才跳出
         minDate: "today",
-        // ... 您原本的 enable 邏輯與限制 ...
+        // 您的其他 enable 邏輯...
+        onChange: (selectedDates, dateStr) => {
+            if (dateStr) fetchSlots(dateStr);
+        }
     });
 }
 </script>

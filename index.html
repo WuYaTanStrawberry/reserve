@@ -51,14 +51,18 @@
 <body>
   
 <div id="closed-announcement" style="display: none; text-align: center; padding: 60px 20px; background-color: #fffaf0; border-radius: 20px; margin: 20px;">
-    <h2 style="color: #E63946;">🍓 預約準備中</h2>
+    <h2 id="announcement-title" style="color: #E63946;">🍓 讀取中...</h2>
+    
     <p style="font-size: 16px; color: #555;">舞夜天草莓園感謝您的支持！</p>
+    
     <div style="background: #fff; padding: 20px; border-radius: 15px; border: 2px dashed #ffb7b7; margin: 25px 0;">
-        <p style="font-weight: bold; margin-bottom: 5px;">🔓 本週開放預約時間：</p>
-        <p style="color: #D62828; font-size: 22px; font-weight: bold;">每週一 中午 12:00</p>
+        <p id="announcement-subtitle" style="font-weight: bold; margin-bottom: 5px;">🔓 公告：</p>
+        <p id="announcement-text" style="color: #D62828; font-size: 20px; font-weight: bold; line-height: 1.5;"></p>
     </div>
-    <p style="font-size: 14px; color: #888;">現在是果園整理時間，請準時再來喔！🦆</p>
+    
+    <p style="font-size: 14px; color: #888;">舞夜天高架草莓園 敬上 🦆</p>
 </div>
+  
 <div id="booking-form">
     </div>
 <div id="loading-overlay">
@@ -112,10 +116,12 @@
   document.addEventListener("DOMContentLoaded", function() {
   const announcement = document.getElementById('closed-announcement');
   const form = document.getElementById('booking-form');
-  const msgText = document.getElementById('announcement-text');
+  const title = document.getElementById('announcement-title');
+  const text = document.getElementById('announcement-text');
+  const subtitle = document.getElementById('announcement-subtitle');
 
   const now = new Date();
-  const day = now.getDay();   // 1 是星期一
+  const day = now.getDay();
   const hour = now.getHours();
 
   // ---------------------------------------------------------
@@ -128,29 +134,26 @@
   const isMondayWaiting = (day === 1 && hour < 12);
 
   if (isOffSeason) {
-    // 🌸 模式 A：草莓季結束 (當 isOffSeason 為 true 時)
+    // 🌸 模式：草莓季結束 (true)
     form.style.display = "none";
     announcement.style.display = "block";
-    if(msgText) msgText.innerHTML = "🍓 本季採果已圓滿結束<br>期待 11 月再與大家見面！🦆";
-    console.log("目前狀態：產季結束公告中");
+    title.innerText = "🍓 本季採果已結束";
+    subtitle.innerText = "📅 預計下次開放時間：";
+    text.innerHTML = "2026 年 11 月<br>期待再與大家見面！";
   } 
   else if (isMondayWaiting) {
-    // ⏳ 模式 B：預約準備中 (當 isOffSeason 為 false 且是週一早上時)
+    // ⏳ 模式：週一排隊中 (false 且 週一早上)
     form.style.display = "none";
     announcement.style.display = "block";
-    if(msgText) msgText.innerHTML = "🍓 預約準備中<br>本週預約將於「週一中午 12:00」準時開放！";
-    console.log("目前狀態：週一預約排隊中");
+    title.innerText = "🍓 預約準備中";
+    subtitle.innerText = "🔓 本週開放預約時間：";
+    text.innerHTML = "每週一 中午 12:00<br>請準時再來喔！";
   } 
   else {
-    // ✅ 模式 C：正常預約 (其他時間)
+    // ✅ 模式：正常營業
     form.style.display = "block";
     announcement.style.display = "none";
-    
-    // 確保日曆只初始化一次
-    setTimeout(() => {
-        initMyCalendar();
-    }, 100);
-    console.log("目前狀態：開放預約中");
+    setTimeout(initMyCalendar, 100);
   }
 });
 

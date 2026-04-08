@@ -63,21 +63,27 @@
     <p style="font-size: 14px; color: #888;">舞夜天高架草莓園 敬上 🦆</p>
 </div>
   
-<div id="booking-form">
-    </div>
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div class="loading-text">🍓 正在為您預約中...</div>
 </div>
 
-<div class="container">
-  <h2>🍓 舞夜天高架草莓園</h2>
-  <div class="subtitle">苗栗大湖 | 採草莓預約</div>
-  
-  <div class="step-box">
-    <span class="step-title">1. 選擇日期 (僅開放本週)</span>
-    <div class="calendar-wrapper"><input type="text" id="datePicker" style="display:none;"></div>
-  </div>
+<div id="closed-announcement" style="display: none; ...">
+    <h2 id="announcement-title">🍓 讀取中...</h2>
+    </div>
+
+<div id="booking-form">
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="您的草莓Logo連結" width="40"> 
+        <h2 style="color: #E63946; display: inline-block;">舞夜天高架草莓園</h2>
+        <p style="color: #888;">苗栗大湖 | 採草莓預約</p>
+    </div>
+    
+    <h3 class="step-title">1. 選擇日期 (僅開放本週)</h3>
+    <input type="text" id="datePicker" readonly>
+    
+    </div>
 
   <div id="step2" class="step-box" style="display:none;">
     <span class="step-title">2. 選擇時段</span>

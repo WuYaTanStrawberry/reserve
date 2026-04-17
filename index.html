@@ -154,9 +154,9 @@
 </div>
 
 <script>
-  // 🍓 設定區
+  // 🍓 後端設定區
   const MY_LIFF_ID = "2009638018-NaOpldtQ"; 
-  const MY_GAS_URL = "https://script.google.com/macros/s/AKfycbwxhikuT9ZTJ66ozbMJox5pzjVbhSGKzddirM4Ka2AnzoiTGjjf_FhsdkTT5AbvCgfhaQ/exec"; 
+  const MY_GAS_URL = "hhttps://script.google.com/macros/s/AKfycbzkq3nsmcA4T8DJfEccoEu53kULAOFu4WNaOzgvBy36zUrWMZNanUryAJsObLIeOKW4jQ/exec"; 
 
   // --- 1. LIFF 啟動 ---
   async function initLiff() {
@@ -339,7 +339,15 @@ function showStep3() {
 
     if(step3) step3.style.display = 'block';
 }
-
+  
+// 當網頁載入時，自動填入上次留下的資料
+window.onload = function() {
+  const savedName = localStorage.getItem('wu_ye_tian_name');
+  const savedPhone = localStorage.getItem('wu_ye_tian_phone');
+  if (savedName) document.getElementById('name').value = savedName;
+  if (savedPhone) document.getElementById('phone').value = savedPhone;
+};
+  
   // --- 5. 送出預約 ---
   async function submitBooking() {
     const name = document.getElementById('name').value;
@@ -351,7 +359,8 @@ function showStep3() {
 
     document.getElementById('submitBtn').disabled = true;
     document.getElementById('loading-overlay').style.display = "flex";
-
+    localStorage.setItem('wu_ye_tian_name', name);
+    localStorage.setItem('wu_ye_tian_phone', phone);
     try {
       const profile = await liff.getProfile();
       await fetch(MY_GAS_URL, {

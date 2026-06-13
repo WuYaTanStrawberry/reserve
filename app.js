@@ -1,7 +1,19 @@
 // 客人預約頁(GitHub Pages 版,呼叫 Apps Script)
 const $ = (id) => document.getElementById(id);
 let selectedHour = null;
+let selectedLeft = 0;
 let lineUserId = '';
+
+function populateQty() {
+  const sel = $('carQty');
+  const max = Math.max(1, selectedLeft);
+  sel.innerHTML = '';
+  for (let i = 1; i <= max; i++) sel.innerHTML += `<option value="${i}">${i} 台</option>`;
+}
+function updateVehUI() {
+  const isCar = document.querySelector('input[name=vehicle]:checked').value === 'car';
+  $('carQtyWrap').style.display = isCar ? 'block' : 'none';
+}
 
 async function init() {
   const { data: config } = await gasGet({ action: 'config' });
@@ -22,6 +34,7 @@ async function init() {
   const pad = (n) => String(n).padStart(2, '0');
   dateEl.min = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
   dateEl.addEventListener('change', loadDay);
+  document.querySelectorAll('input[name=vehicle]').forEach((r) => r.addEventListener('change', updateVehUI));
 }
 
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
@@ -53,6 +66,9 @@ function renderSlots(slots) {
         document.querySelectorAll('.slot').forEach((el) => el.classList.remove('selected'));
         div.classList.add('selected');
         selectedHour = s.hour;
+        selectedLeft = s.left;
+        populateQty();
+        updateVehUI();
         $('formSection').style.display = 'block';
         banner($('formBanner'), '', '');
       });
@@ -65,20 +81,21 @@ async function submit() {
   const name = $('name').value.trim();
   const phone = $('phone').value.trim();
   const vehicle = document.querySelector('input[name=vehicle]:checked').value;
+  const cars = vehicle === 'car' ? Number($('carQty').value || 1) : 0;
   const date = $('date').value;
   if (selectedHour == null) { banner($('formBanner'), 'err', '請先選擇時段'); return; }
   if (!name) { banner($('formBanner'), 'err', '請填寫姓名'); return; }
   if (!phone) { banner($('formBanner'), 'err', '請填寫電話'); return; }
 
   $('submitBtn').disabled = true;
-  const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, lineUserId });
+  const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId });
   $('submitBtn').disabled = false;
   if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); loadDay(); return; }
   showSuccess(data.booking);
 }
 
 function showSuccess(b) {
-  const veh = b.vehicle === 'car' ? '🚗 汽車' : '🏍️ 機車';
+  const veh = b.vehicle === 'car' ? `🚗 汽車 ${b.cars} 台` : '🏍️ 機車';
   document.querySelector('.wrap').innerHTML = `
     <div class="card success-box">
       <div class="big">✅</div>

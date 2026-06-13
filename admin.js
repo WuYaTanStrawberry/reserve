@@ -35,12 +35,13 @@ async function loadBookings() {
   const { ok, data } = await adminPost('bookings', date ? { date } : {});
   if (!ok) return;
   const list = data.bookings || [];
-  const cars = list.filter((b) => b.vehicle === 'car').length;
-  $('bookingStat').textContent = `共 ${list.length} 筆(汽車 ${cars}、機車 ${list.length - cars})`;
+  const carCount = list.reduce((s, b) => s + (b.cars || 0), 0);
+  const motoCount = list.filter((b) => b.vehicle === 'motor').length;
+  $('bookingStat').textContent = `共 ${list.length} 筆(汽車 ${carCount} 台、機車 ${motoCount})`;
   if (!list.length) { $('bookingList').innerHTML = '<p class="muted">目前沒有預約</p>'; return; }
   let html = `<table><thead><tr><th>日期</th><th>時段</th><th>姓名</th><th>電話</th><th>車輛</th><th>報到</th><th></th></tr></thead><tbody>`;
   list.forEach((b) => {
-    const veh = b.vehicle === 'car' ? '<span class="tag car">汽車</span>' : '<span class="tag motor">機車</span>';
+    const veh = b.vehicle === 'car' ? `<span class="tag car">汽車 ×${b.cars}</span>` : '<span class="tag motor">機車</span>';
     const done = b.status === 'checkedin';
     const line = b.hasLine ? ' 📱' : '';
     html += `<tr class="${done ? 'checkedin' : ''}">

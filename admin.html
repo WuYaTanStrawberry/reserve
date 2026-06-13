@@ -19,6 +19,7 @@
     <div id="app" style="display:none">
       <div class="tabs">
         <button data-tab="bookings" class="active">📋 預約名單</button>
+        <button data-tab="newbooking">➕ 新增預約</button>
         <button data-tab="weeks">📅 開放週次</button>
         <button data-tab="settings">⚙️ 設定</button>
       </div>
@@ -31,6 +32,29 @@
           <span class="stat" id="bookingStat"></span>
         </div>
         <div id="bookingList"></div>
+      </div>
+
+      <div class="card tab" id="tab-newbooking" style="display:none">
+        <p class="muted" style="margin-top:0">電話 / 現場預約由你直接登記。不受「開放週次、公休日」限制,但仍會檢查車位是否足夠。若已設定 LINE 與你的 userId,新增後會推一則確認到你自己的 LINE。</p>
+        <label for="nbDate">日期</label>
+        <input type="date" id="nbDate">
+        <label for="nbHour">時段</label>
+        <select id="nbHour"></select>
+        <label>車輛種類</label>
+        <div class="veh">
+          <label><input type="radio" name="nbVehicle" value="car" checked><span>🚗 汽車</span></label>
+          <label><input type="radio" name="nbVehicle" value="motor"><span>🏍️ 機車</span></label>
+        </div>
+        <div id="nbQtyWrap">
+          <label for="nbCars">汽車數量</label>
+          <select id="nbCars"></select>
+        </div>
+        <label for="nbName">姓名</label>
+        <input type="text" id="nbName" maxlength="30" placeholder="客人姓名">
+        <label for="nbPhone">電話</label>
+        <input type="tel" id="nbPhone" maxlength="20" placeholder="例:0912345678">
+        <div id="nbBanner"></div>
+        <button class="primary" id="nbSubmit">新增預約</button>
       </div>
 
       <div class="card tab" id="tab-weeks" style="display:none">
@@ -62,6 +86,8 @@
         <input type="text" id="lineUrl" placeholder="https://你的帳號.github.io/repo">
         <label>LIFF ID</label>
         <input type="text" id="lineLiff" placeholder="例 1234567890-abcdefgh">
+        <label>我的 LINE userId(手動新增預約的通知收件人)</label>
+        <input type="text" id="lineOwner" placeholder="手動登記時,確認通知會發到這個 LINE">
         <label>Channel access token(貼上後儲存;為安全不會再顯示)</label>
         <input type="password" id="lineToken" placeholder="留空表示不變更">
         <div id="lineBanner"></div>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🍓 草莓園後台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top"><h1>🍓 園主後台</h1></header>
+  <div class="wrap">
+    <div class="card" id="loginCard">
+      <label for="pw">管理密碼</label>
+      <input type="password" id="pw" placeholder="請輸入後台密碼">
+      <div id="loginBanner"></div>
+      <button class="primary" id="loginBtn">登入</button>
+    </div>
+
+    <div id="app" style="display:none">
+      <div class="tabs">
+        <button data-tab="bookings" class="active">📋 預約名單</button>
+        <button data-tab="weeks">📅 開放週次</button>
+        <button data-tab="settings">⚙️ 設定</button>
+      </div>
+
+      <div class="card tab" id="tab-bookings">
+        <div class="toolbar">
+          <label style="margin:0">篩選日期</label>
+          <input type="date" id="filterDate" style="width:auto">
+          <button class="btn-sm" id="clearFilter">顯示全部</button>
+          <span class="stat" id="bookingStat"></span>
+        </div>
+        <div id="bookingList"></div>
+      </div>
+
+      <div class="card tab" id="tab-weeks" style="display:none">
+        <p class="muted" style="margin-top:0">開啟開關後,該週客人才能預約。預設為關閉。</p>
+        <div id="weekList"></div>
+      </div>
+
+      <div class="card tab" id="tab-settings" style="display:none">
+        <label>每時段汽車車位數(實體 11,建議設 9 留周轉)</label>
+        <input type="text" id="cfgCapacity" inputmode="numeric">
+        <label>開放起始時間(整點,0-23)</label>
+        <input type="text" id="cfgOpen" inputmode="numeric">
+        <label>開放結束時間(整點,1-24)</label>
+        <input type="text" id="cfgClose" inputmode="numeric">
+        <label>固定公休日(打勾者不開放)</label>
+        <div class="weekdays" id="cfgClosed"></div>
+        <label>前一天提醒發送時間(整點,18=晚上六點)</label>
+        <input type="text" id="cfgReminder" inputmode="numeric">
+        <label>變更後台密碼(留空表示不變更)</label>
+        <input type="password" id="cfgPw" placeholder="新密碼">
+        <div id="cfgBanner"></div>
+        <button class="primary" id="saveCfg">儲存設定</button>
+
+        <hr style="margin:22px 0;border:none;border-top:1px solid var(--line)">
+        <h3 style="margin:0 0 4px">📱 LINE 官方帳號連動</h3>
+        <p class="note">填入金鑰後,預約成功會通知客人、前一天會自動提醒。</p>
+        <label><input type="checkbox" id="lineEnabled"> 啟用 LINE 推播</label>
+        <label>對外網址 publicBaseUrl(你的 GitHub Pages 網址)</label>
+        <input type="text" id="lineUrl" placeholder="https://你的帳號.github.io/repo">
+        <label>LIFF ID</label>
+        <input type="text" id="lineLiff" placeholder="例 1234567890-abcdefgh">
+        <label>Channel access token(貼上後儲存;為安全不會再顯示)</label>
+        <input type="password" id="lineToken" placeholder="留空表示不變更">
+        <div id="lineBanner"></div>
+        <button class="primary" id="saveLine">儲存 LINE 設定</button>
+
+        <hr style="margin:22px 0;border:none;border-top:1px dashed var(--line)">
+        <h4 style="margin:0 0 4px">🧪 測試推播(確認金鑰有效)</h4>
+        <p class="note">先儲存上面的 token,再填你自己的 LINE userId(LINE Developers 該 channel 的 Basic settings 最下方「Your user ID」),按下後你的 LINE 會收到測試訊息。</p>
+        <label>你的 LINE userId</label>
+        <input type="text" id="testUid" placeholder="例 Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        <div id="testBanner"></div>
+        <button class="primary" id="testLine" style="background:#fff;color:var(--berry);border:1.5px solid var(--berry)">發送測試訊息給我</button>
+      </div>
+
+      <div class="foot-link"><a href="#" id="logout">登出</a></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

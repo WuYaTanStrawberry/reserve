@@ -21,6 +21,7 @@
         <button data-tab="bookings" class="active">📋 預約名單</button>
         <button data-tab="newbooking">➕ 新增預約</button>
         <button data-tab="weeks">📅 開放週次</button>
+        <button data-tab="audience">🎯 受眾匯出</button>
         <button data-tab="settings">⚙️ 設定</button>
       </div>
 
@@ -60,6 +61,18 @@
       <div class="card tab" id="tab-weeks" style="display:none">
         <p class="muted" style="margin-top:0">開啟開關後,該週客人才能預約。預設為關閉。</p>
         <div id="weekList"></div>
+      </div>
+
+      <div class="card tab" id="tab-audience" style="display:none">
+        <p class="muted" style="margin-top:0">把「已報到」且「從 LINE 預約」的客人整理成名單,下載後到 LINE 官方帳號後台 →「受眾」→「用戶 ID 上傳」建立受眾,即可用 LINE 內建群發做精準推播(發優惠、回流提醒等)。電話/現場登記的客人沒有 LINE 身分,不會在名單內。</p>
+        <div class="toolbar">
+          <label style="margin:0">期間</label>
+          <input type="date" id="audFrom" style="width:auto">
+          <span>~</span>
+          <input type="date" id="audTo" style="width:auto">
+          <button class="btn-sm" id="audGen">產生名單</button>
+        </div>
+        <div id="audResult"></div>
       </div>
 
       <div class="card tab" id="tab-settings" style="display:none">

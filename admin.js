@@ -116,6 +116,34 @@ async function loadWeeks() {
   document.querySelectorAll('[data-week]').forEach((cb) => cb.addEventListener('change', async () => { await adminPost('setWeek', { weekKey: cb.dataset.week, open: cb.checked }); }));
 }
 
+// ---- 受眾匯出 ----
+function downloadText(name, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+async function genAudience() {
+  const extra = {};
+  if ($('audFrom').value) extra.from = $('audFrom').value;
+  if ($('audTo').value) extra.to = $('audTo').value;
+  const { ok, data } = await adminPost('audience', extra);
+  if (!ok) { banner($('audResult'), 'err', data.error || '產生失敗'); return; }
+  if (!data.count) {
+    $('audResult').innerHTML = `<div class="banner warn">這個範圍內沒有「已報到且從 LINE 預約」的客人(已報到共 ${data.checkedinTotal} 筆,但都沒有 LINE 身分)。</div>`;
+    return;
+  }
+  const txt = data.userIds.join('\n');
+  $('audResult').innerHTML = `
+    <div class="banner ok">可推播名單:${data.count} 人(此範圍已報到共 ${data.checkedinTotal} 筆)</div>
+    <button class="primary" id="audDl">⬇️ 下載 userId.txt</button>
+    <p class="note">下載後到 LINE 官方帳號後台 →「受眾」→ 新增受眾 →「用戶 ID 上傳」上傳這個檔即可。注意:LINE 規定受眾需累積到一定人數才能群發。</p>
+    <textarea readonly style="width:100%;height:120px;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:10px">${txt}</textarea>`;
+  $('audDl').addEventListener('click', () => downloadText('audience_checkedin.txt', txt));
+}
+
 // ---- 設定 ----
 const WD = ['日', '一', '二', '三', '四', '五', '六'];
 function renderClosedWeekdays(sel) {
@@ -176,6 +204,7 @@ $('saveCfg').addEventListener('click', saveConfig);
 $('saveLine').addEventListener('click', saveLine);
 $('testLine').addEventListener('click', testLine);
 $('nbSubmit').addEventListener('click', newBooking);
+$('audGen').addEventListener('click', genAudience);
 $('logout').addEventListener('click', (e) => { e.preventDefault(); sessionStorage.removeItem('adminKey'); location.reload(); });
 
 if (KEY) adminPost('getConfig').then(({ ok }) => { if (ok) enterApp(); });

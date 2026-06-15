@@ -9,7 +9,7 @@ function _overlayEl() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'loadingOverlay';
-    el.innerHTML = '<div class="lo-box"><div class="lo-ball"></div><div class="lo-txt">查詢中,請稍候…</div></div>';
+    el.innerHTML = '<div class="lo-box"><img class="lo-logo" src="logo.png" alt=""><div class="lo-txt">查詢中,請稍候…</div></div>';
     document.body.appendChild(el);
   }
   return el;

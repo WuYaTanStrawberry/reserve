@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>🍓 舞夜天高架草莓園 後台</title>
   <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#e23b5a">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="草莓園後台">
 </head>
 <body>
   <header class="top"><h1>🍓 舞夜天高架草莓園</h1><p>園主後台</p></header>
@@ -26,6 +32,7 @@
       </div>
 
       <div class="card tab" id="tab-bookings">
+        <div class="statcards" id="todayStats"></div>
         <div class="toolbar">
           <label style="margin:0">篩選日期</label>
           <input type="date" id="filterDate" style="width:auto">

@@ -115,3 +115,37 @@ tr.checkedin td a { color: #aaa; }
 .weekdays .wd { display: flex; align-items: center; gap: 4px; margin: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; cursor: pointer; }
 .weekdays .wd:has(input:checked) { border-color: var(--berry); background: #fff0f3; color: var(--berry-dark); }
 .weekdays .wd input { margin: 0; }
+
+/* 載入中遮罩 */
+#loadingOverlay { position: fixed; inset: 0; background: rgba(255, 247, 248, .72); display: none; align-items: center; justify-content: center; z-index: 9999; }
+#loadingOverlay.show { display: flex; }
+#loadingOverlay .lo-box { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px 34px; text-align: center; box-shadow: var(--shadow); }
+/* 草莓 disco 球(立體球體 + 表面格子滾動製造旋轉感)*/
+#loadingOverlay .lo-ball {
+  position: relative; width: 92px; height: 92px; margin: 8px auto 16px; border-radius: 50%;
+  background-color: #d11f43;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.28) 0 2px, transparent 2px 15px),
+    repeating-linear-gradient(45deg, #ff7d93 0 14px, #e23b5a 14px 28px);
+  background-size: 15px 100%, 30px 30px;
+  box-shadow: inset -16px -14px 30px rgba(90,0,25,.6), inset 14px 12px 24px rgba(255,255,255,.45), 0 6px 14px rgba(180,40,70,.3);
+  animation: lo-roll 1.4s linear infinite;
+}
+#loadingOverlay .lo-ball::before { /* 綠葉冠 */
+  content: ""; position: absolute; top: -8px; left: 50%; width: 34px; height: 16px; transform: translateX(-50%); z-index: 2;
+  background: #3a8a4f; clip-path: polygon(50% 100%, 0 0, 30% 45%, 50% 0, 70% 45%, 100% 0);
+}
+#loadingOverlay .lo-ball::after { /* 高光 */
+  content: ""; position: absolute; top: 12%; left: 16%; width: 34%; height: 28%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,255,255,.92), rgba(255,255,255,0));
+}
+#loadingOverlay .lo-txt { color: var(--berry-dark); font-weight: 700; }
+@keyframes lo-roll { to { background-position: -90px 0, -90px 0; } }
+
+/* 今日統計卡片 */
+.statcards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.statcard { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 6px; text-align: center; }
+.statcard .num { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: var(--berry-dark); }
+.statcard.ok .num { color: var(--ok); }
+.statcard .lbl { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+@media (max-width: 480px) { .statcard .num { font-size: 1.3rem; } .statcard .lbl { font-size: .7rem; } }

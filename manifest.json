@@ -1,0 +1,12 @@
+{
+  "name": "舞夜天高架草莓園 後台",
+  "short_name": "草莓園後台",
+  "start_url": "admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7f8",
+  "theme_color": "#e23b5a",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1,8 +1,9 @@
 // 後台(GitHub Pages 版,呼叫 Apps Script)
 const $ = (id) => document.getElementById(id);
-let KEY = sessionStorage.getItem('adminKey') || '';
+let KEY = localStorage.getItem('adminKey') || '';
 
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
+function todayStr() { const t = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; }
 // 所有後台動作都帶 key
 async function adminPost(action, extra) { return gasPost(Object.assign({ action, key: KEY }, extra || {})); }
 
@@ -10,7 +11,7 @@ async function adminPost(action, extra) { return gasPost(Object.assign({ action,
 async function login() {
   const pw = $('pw').value;
   const { data } = await gasPost({ action: 'adminLogin', password: pw });
-  if (data.ok) { KEY = pw; sessionStorage.setItem('adminKey', KEY); enterApp(); }
+  if (data.ok) { KEY = pw; localStorage.setItem('adminKey', KEY); enterApp(); }
   else banner($('loginBanner'), 'err', '密碼錯誤');
 }
 function enterApp() {
@@ -21,7 +22,21 @@ function enterApp() {
   const pad = (n) => String(n).padStart(2, '0');
   $('nbDate').min = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
   document.querySelectorAll('input[name=nbVehicle]').forEach((r) => r.addEventListener('change', updateNbVeh));
-  loadBookings(); loadWeeks(); loadConfig();
+  $('filterDate').value = todayStr(); // 預設先看今日
+  loadTodayStats(); loadBookings(); loadWeeks(); loadConfig();
+}
+
+async function loadTodayStats() {
+  const { ok, data } = await adminPost('bookings', { date: todayStr() });
+  if (!ok) return;
+  const list = data.bookings || [];
+  const cars = list.reduce((s, b) => s + (b.cars || 0), 0);
+  const cin = list.filter((b) => b.status === 'checkedin').length;
+  $('todayStats').innerHTML = `
+    <div class="statcard"><div class="num">${list.length}</div><div class="lbl">今日預約</div></div>
+    <div class="statcard ok"><div class="num">${cin}</div><div class="lbl">已報到</div></div>
+    <div class="statcard"><div class="num">${list.length - cin}</div><div class="lbl">未報到</div></div>
+    <div class="statcard"><div class="num">${cars}</div><div class="lbl">汽車總數</div></div>`;
 }
 
 function updateNbVeh() {
@@ -53,7 +68,7 @@ async function newBooking() {
   if (!ok) { banner($('nbBanner'), 'err', data.error || '新增失敗'); return; }
   banner($('nbBanner'), 'ok', '已新增 ✅' + (data.notified ? ',確認通知已發到你的 LINE 📱' : ''));
   $('nbName').value = ''; $('nbPhone').value = '';
-  loadBookings(); loadWeeks();
+  loadBookings(); loadWeeks(); loadTodayStats();
   setTimeout(() => banner($('nbBanner'), '', ''), 3000);
 }
 
@@ -94,10 +109,10 @@ async function loadBookings() {
   });
   html += '</tbody></table>';
   $('bookingList').innerHTML = html;
-  document.querySelectorAll('[data-ci]').forEach((btn) => btn.addEventListener('click', async () => { await adminPost('checkin', { id: btn.dataset.ci }); loadBookings(); }));
+  document.querySelectorAll('[data-ci]').forEach((btn) => btn.addEventListener('click', async () => { await adminPost('checkin', { id: btn.dataset.ci }); loadBookings(); loadTodayStats(); }));
   document.querySelectorAll('[data-del]').forEach((btn) => btn.addEventListener('click', async () => {
     if (!confirm('確定取消這筆預約?車位會立即釋出。')) return;
-    await adminPost('delete', { id: btn.dataset.del }); loadBookings(); loadWeeks();
+    await adminPost('delete', { id: btn.dataset.del }); loadBookings(); loadWeeks(); loadTodayStats();
   }));
 }
 
@@ -172,7 +187,7 @@ async function saveConfig() {
   if (np) body.newPassword = np;
   const { ok, data } = await adminPost('setConfig', body);
   if (ok) {
-    if (np) { KEY = np; sessionStorage.setItem('adminKey', KEY); $('cfgPw').value = ''; }
+    if (np) { KEY = np; localStorage.setItem('adminKey', KEY); $('cfgPw').value = ''; }
     banner($('cfgBanner'), 'ok', '已儲存'); loadConfig();
     setTimeout(() => banner($('cfgBanner'), '', ''), 2000);
   } else banner($('cfgBanner'), 'err', data.error || '儲存失敗');
@@ -205,6 +220,6 @@ $('saveLine').addEventListener('click', saveLine);
 $('testLine').addEventListener('click', testLine);
 $('nbSubmit').addEventListener('click', newBooking);
 $('audGen').addEventListener('click', genAudience);
-$('logout').addEventListener('click', (e) => { e.preventDefault(); sessionStorage.removeItem('adminKey'); location.reload(); });
+$('logout').addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('adminKey'); location.reload(); });
 
 if (KEY) adminPost('getConfig').then(({ ok }) => { if (ok) enterApp(); });

@@ -1,35 +1,43 @@
 // 後台(GitHub Pages 版,呼叫 Apps Script)
 const $ = (id) => document.getElementById(id);
 let KEY = localStorage.getItem('adminKey') || '';
+let uiReady = false;
 
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
 function todayStr() { const t = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; }
-// 所有後台動作都帶 key
 async function adminPost(action, extra) { return gasPost(Object.assign({ action, key: KEY }, extra || {})); }
 
-// ---- 登入 ----
+// ---- 登入 / 進入(只用一支 adminInit,加快速度)----
 async function login() {
-  const pw = $('pw').value;
-  const { data } = await gasPost({ action: 'adminLogin', password: pw });
-  if (data.ok) { KEY = pw; localStorage.setItem('adminKey', KEY); enterApp(); }
-  else banner($('loginBanner'), 'err', '密碼錯誤');
+  KEY = $('pw').value;
+  banner($('loginBanner'), 'warn', '登入中…');
+  const ok = await enterApp();
+  if (ok) { localStorage.setItem('adminKey', KEY); banner($('loginBanner'), '', ''); }
+  else { KEY = ''; banner($('loginBanner'), 'err', '密碼錯誤'); }
 }
-function enterApp() {
+async function enterApp() {
+  const { ok, data } = await adminPost('adminInit');
+  if (!ok) return false;
+  setupAdminUI();
   $('loginCard').style.display = 'none';
   $('app').style.display = 'block';
-  // 手動新增預約:日期最小為今天、車輛切換
-  const t = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
+  applyConfig(data.config);
+  renderWeeks(data.weeks);
+  renderTodayStats(data.bookings);
+  $('filterDate').value = data.today;
+  renderBookings(data.bookings);
+  return true;
+}
+function setupAdminUI() {
+  if (uiReady) return;
+  uiReady = true;
+  const t = new Date(); const pad = (n) => String(n).padStart(2, '0');
   $('nbDate').min = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
   document.querySelectorAll('input[name=nbVehicle]').forEach((r) => r.addEventListener('change', updateNbVeh));
-  $('filterDate').value = todayStr(); // 預設先看今日
-  loadTodayStats(); loadBookings(); loadWeeks(); loadConfig();
 }
 
-async function loadTodayStats() {
-  const { ok, data } = await adminPost('bookings', { date: todayStr() });
-  if (!ok) return;
-  const list = data.bookings || [];
+// ---- 今日統計 ----
+function renderTodayStats(list) {
   const cars = list.reduce((s, b) => s + (b.cars || 0), 0);
   const cin = list.filter((b) => b.status === 'checkedin').length;
   $('todayStats').innerHTML = `
@@ -37,6 +45,10 @@ async function loadTodayStats() {
     <div class="statcard ok"><div class="num">${cin}</div><div class="lbl">已報到</div></div>
     <div class="statcard"><div class="num">${list.length - cin}</div><div class="lbl">未報到</div></div>
     <div class="statcard"><div class="num">${cars}</div><div class="lbl">汽車總數</div></div>`;
+}
+async function loadTodayStats() {
+  const { ok, data } = await adminPost('bookings', { date: todayStr() });
+  if (ok) renderTodayStats(data.bookings || []);
 }
 
 function updateNbVeh() {
@@ -110,11 +122,7 @@ async function loadWaitlistAdmin() {
 }
 
 // ---- 名單 ----
-async function loadBookings() {
-  const date = $('filterDate').value;
-  const { ok, data } = await adminPost('bookings', date ? { date } : {});
-  if (!ok) return;
-  const list = data.bookings || [];
+function renderBookings(list) {
   const carCount = list.reduce((s, b) => s + (b.cars || 0), 0);
   const motoCount = list.filter((b) => b.vehicle === 'motor').length;
   $('bookingStat').textContent = `共 ${list.length} 筆(汽車 ${carCount} 台、機車 ${motoCount})`;
@@ -142,13 +150,16 @@ async function loadBookings() {
     await adminPost('delete', { id: btn.dataset.del }); loadBookings(); loadWeeks(); loadTodayStats();
   }));
 }
+async function loadBookings() {
+  const date = $('filterDate').value;
+  const { ok, data } = await adminPost('bookings', date ? { date } : {});
+  if (ok) renderBookings(data.bookings || []);
+}
 
 // ---- 週次 ----
-async function loadWeeks() {
-  const { ok, data } = await adminPost('weeks', { weeks: 10 });
-  if (!ok) return;
+function renderWeeks(weeks) {
   let html = '';
-  data.weeks.forEach((w) => {
+  weeks.forEach((w) => {
     html += `<div class="week-row">
       <div><strong>${w.monday} ~ ${w.sunday}</strong><div class="stat">該週預約 ${w.bookingCount} 筆</div></div>
       <label class="switch"><input type="checkbox" data-week="${w.weekKey}" ${w.open ? 'checked' : ''}><span class="track"></span></label>
@@ -156,6 +167,10 @@ async function loadWeeks() {
   });
   $('weekList').innerHTML = html;
   document.querySelectorAll('[data-week]').forEach((cb) => cb.addEventListener('change', async () => { await adminPost('setWeek', { weekKey: cb.dataset.week, open: cb.checked }); }));
+}
+async function loadWeeks() {
+  const { ok, data } = await adminPost('weeks', { weeks: 10 });
+  if (ok) renderWeeks(data.weeks);
 }
 
 // ---- 受眾匯出 ----
@@ -193,9 +208,7 @@ function renderClosedWeekdays(sel) {
 }
 function readClosedWeekdays() { return Array.from($('cfgClosed').querySelectorAll('input:checked')).map((c) => Number(c.value)); }
 
-async function loadConfig() {
-  const { ok, data } = await adminPost('getConfig');
-  if (!ok) return;
+function applyConfig(data) {
   $('cfgCapacity').value = data.capacity;
   $('cfgOpen').value = data.openHour;
   $('cfgClose').value = data.closeHour;
@@ -208,6 +221,10 @@ async function loadConfig() {
   $('lineOwner').value = data.line.ownerUserId || '';
   $('lineToken').placeholder = data.line.hasToken ? '已設定(留空表示不變更)' : '留空表示不變更';
   buildNewBookingForm(data);
+}
+async function loadConfig() {
+  const { ok, data } = await adminPost('getConfig');
+  if (ok) applyConfig(data);
 }
 async function saveConfig() {
   const body = { capacity: $('cfgCapacity').value, openHour: $('cfgOpen').value, closeHour: $('cfgClose').value, reminderHour: $('cfgReminder').value, reviewUrl: $('cfgReviewUrl').value, closedWeekdays: readClosedWeekdays() };
@@ -250,4 +267,4 @@ $('nbSubmit').addEventListener('click', newBooking);
 $('audGen').addEventListener('click', genAudience);
 $('logout').addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('adminKey'); location.reload(); });
 
-if (KEY) adminPost('getConfig').then(({ ok }) => { if (ok) enterApp(); });
+if (KEY) enterApp(); // 已記住登入 → 直接進(一支 adminInit)

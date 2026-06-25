@@ -108,6 +108,7 @@ function showSuccess(b) {
         <tr><th>時段</th><td>${b.hourLabel}</td></tr>
         <tr><th>車輛</th><td>${veh}</td></tr>
       </table>
+      <div class="banner warn" style="margin-top:12px">⏰ 車位保留至預約時段開始後 <b>10 分鐘</b>,逾時將先開放給現場客人,敬請準時到達 🙏</div>
       <a class="primary" style="display:block;text-align:center;text-decoration:none;background:#fff;color:var(--berry);border:1.5px solid var(--berry)" href="cancel.html?token=${b.cancelToken}">查看 / 取消這筆預約</a>
       <p class="note">💡 想取消請保留上方連結;之後也可從這裡一鍵取消並釋出車位。</p>
       <button class="primary" onclick="location.reload()">再預約一筆</button>

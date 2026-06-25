@@ -58,6 +58,9 @@ input[type=text], input[type=tel], input[type=date], select {
 .slot .lbl { font-weight: 700; }
 .slot .left { font-size: .85rem; color: var(--ok); margin-top: 2px; }
 .slot.full { background: #f6f6f6; color: var(--full); cursor: not-allowed; border-color: #eee; }
+.slot.waitlistable { cursor: pointer; }
+.slot.waitlistable .left { color: var(--berry); }
+.slot.waitlistable:hover { border-color: var(--berry); background: #fff0f3; }
 .slot.full .left { color: var(--full); }
 .slot.selected { border-color: var(--berry); background: #fff0f3; box-shadow: 0 0 0 3px #fbd9e1; }
 .veh { display: flex; gap: 10px; margin-top: 6px; }

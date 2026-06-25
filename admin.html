@@ -26,6 +26,7 @@
       <div class="tabs">
         <button data-tab="bookings" class="active">📋 預約名單</button>
         <button data-tab="newbooking">➕ 新增預約</button>
+        <button data-tab="waitlist">📥 候補名單</button>
         <button data-tab="weeks">📅 開放週次</button>
         <button data-tab="audience">🎯 受眾匯出</button>
         <button data-tab="settings">⚙️ 設定</button>
@@ -65,6 +66,11 @@
         <button class="primary" id="nbSubmit">新增預約</button>
       </div>
 
+      <div class="card tab" id="tab-waitlist" style="display:none">
+        <p class="muted" style="margin-top:0">時段額滿時客人可加入候補。有人取消、車位釋出時,系統會自動用 LINE 通知排在前面、且車位數夠的候補者(僅限從 LINE 預約者)。</p>
+        <div id="waitlistList"></div>
+      </div>
+
       <div class="card tab" id="tab-weeks" style="display:none">
         <p class="muted" style="margin-top:0">開啟開關後,該週客人才能預約。預設為關閉。</p>
         <div id="weekList"></div>
@@ -93,6 +99,8 @@
         <div class="weekdays" id="cfgClosed"></div>
         <label>前一天提醒發送時間(整點,18=晚上六點)</label>
         <input type="text" id="cfgReminder" inputmode="numeric">
+        <label>Google 評論連結(填了才會在客人來訪後自動邀請評價)</label>
+        <input type="text" id="cfgReviewUrl" placeholder="https://g.page/r/...(留空=不發評價邀請)">
         <label>變更後台密碼(留空表示不變更)</label>
         <input type="password" id="cfgPw" placeholder="新密碼">
         <div id="cfgBanner"></div>

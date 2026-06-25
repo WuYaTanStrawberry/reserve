@@ -79,8 +79,35 @@ document.querySelectorAll('.tabs button').forEach((btn) => {
     btn.classList.add('active');
     document.querySelectorAll('.tab').forEach((t) => (t.style.display = 'none'));
     $('tab-' + btn.dataset.tab).style.display = 'block';
+    if (btn.dataset.tab === 'waitlist') loadWaitlistAdmin();
   });
 });
+
+// ---- 候補名單 ----
+async function loadWaitlistAdmin() {
+  const { ok, data } = await adminPost('waitlist');
+  if (!ok) return;
+  const list = data.waitlist || [];
+  if (!list.length) { $('waitlistList').innerHTML = '<p class="muted">目前沒有候補</p>'; return; }
+  let html = `<table><thead><tr><th>日期</th><th>時段</th><th>姓名</th><th>電話</th><th>台數</th><th></th></tr></thead><tbody>`;
+  list.forEach((w) => {
+    html += `<tr>
+      <td>${w.date}<br><span class="muted">星期${w.weekday}</span></td>
+      <td>${w.hourLabel}</td>
+      <td>${w.name}${w.hasLine ? ' 📱' : ''}</td>
+      <td><a href="tel:${w.phone}">${w.phone}</a></td>
+      <td>${w.cars}</td>
+      <td><button class="btn-sm danger" data-wd="${w.id}">移除</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('waitlistList').innerHTML = html;
+  document.querySelectorAll('[data-wd]').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('移除這筆候補?')) return;
+    await adminPost('waitlistDelete', { id: btn.dataset.wd });
+    loadWaitlistAdmin();
+  }));
+}
 
 // ---- 名單 ----
 async function loadBookings() {
@@ -173,6 +200,7 @@ async function loadConfig() {
   $('cfgOpen').value = data.openHour;
   $('cfgClose').value = data.closeHour;
   $('cfgReminder').value = data.reminderHour;
+  $('cfgReviewUrl').value = data.reviewUrl || '';
   renderClosedWeekdays(data.closedWeekdays || []);
   $('lineEnabled').checked = !!data.line.enabled;
   $('lineUrl').value = data.line.publicBaseUrl || '';
@@ -182,7 +210,7 @@ async function loadConfig() {
   buildNewBookingForm(data);
 }
 async function saveConfig() {
-  const body = { capacity: $('cfgCapacity').value, openHour: $('cfgOpen').value, closeHour: $('cfgClose').value, reminderHour: $('cfgReminder').value, closedWeekdays: readClosedWeekdays() };
+  const body = { capacity: $('cfgCapacity').value, openHour: $('cfgOpen').value, closeHour: $('cfgClose').value, reminderHour: $('cfgReminder').value, reviewUrl: $('cfgReviewUrl').value, closedWeekdays: readClosedWeekdays() };
   const np = $('cfgPw').value.trim();
   if (np) body.newPassword = np;
   const { ok, data } = await adminPost('setConfig', body);

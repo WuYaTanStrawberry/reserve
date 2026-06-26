@@ -11,13 +11,13 @@ async function adminPost(action, extra) { return gasPost(Object.assign({ action,
 async function login() {
   KEY = $('pw').value;
   banner($('loginBanner'), 'warn', '登入中…');
-  const ok = await enterApp();
-  if (ok) { localStorage.setItem('adminKey', KEY); banner($('loginBanner'), '', ''); }
-  else { KEY = ''; banner($('loginBanner'), 'err', '密碼錯誤'); }
+  const r = await enterApp();
+  if (r.ok) { localStorage.setItem('adminKey', KEY); banner($('loginBanner'), '', ''); }
+  else { KEY = ''; banner($('loginBanner'), 'err', r.error || '密碼錯誤'); }
 }
 async function enterApp() {
   const { ok, data } = await adminPost('adminInit');
-  if (!ok) return false;
+  if (!ok) return { ok: false, error: data.error };
   setupAdminUI();
   $('loginCard').style.display = 'none';
   $('app').style.display = 'block';
@@ -26,7 +26,7 @@ async function enterApp() {
   renderTodayStats(data.bookings);
   $('filterDate').value = data.today;
   renderBookings(data.bookings);
-  return true;
+  return { ok: true };
 }
 function setupAdminUI() {
   if (uiReady) return;

@@ -27,6 +27,7 @@
         <button data-tab="bookings" class="active">📋 預約名單</button>
         <button data-tab="newbooking">➕ 新增預約</button>
         <button data-tab="waitlist">📥 候補名單</button>
+        <button data-tab="feedback">💬 顧客回饋</button>
         <button data-tab="weeks">📅 開放週次</button>
         <button data-tab="audience">🎯 受眾匯出</button>
         <button data-tab="settings">⚙️ 設定</button>
@@ -69,6 +70,12 @@
       <div class="card tab" id="tab-waitlist" style="display:none">
         <p class="muted" style="margin-top:0">時段額滿時客人可加入候補。有人取消、車位釋出時,系統會自動用 LINE 通知排在前面、且車位數夠的候補者(僅限從 LINE 預約者)。</p>
         <div id="waitlistList"></div>
+      </div>
+
+      <div class="card tab" id="tab-feedback" style="display:none">
+        <p class="muted" style="margin-top:0">來訪客人會收到 LINE 回饋邀請 → 先在這裡留評分/留言。滿意者會被引導去 Google;不滿意者你能在這裡先看到、私下處理。</p>
+        <div id="feedbackStat" class="stat" style="margin-bottom:8px"></div>
+        <div id="feedbackList"></div>
       </div>
 
       <div class="card tab" id="tab-weeks" style="display:none">

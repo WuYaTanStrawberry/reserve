@@ -92,8 +92,31 @@ document.querySelectorAll('.tabs button').forEach((btn) => {
     document.querySelectorAll('.tab').forEach((t) => (t.style.display = 'none'));
     $('tab-' + btn.dataset.tab).style.display = 'block';
     if (btn.dataset.tab === 'waitlist') loadWaitlistAdmin();
+    if (btn.dataset.tab === 'feedback') loadFeedbackAdmin();
   });
 });
+
+// ---- 顧客回饋 ----
+async function loadFeedbackAdmin() {
+  const { ok, data } = await adminPost('feedback');
+  if (!ok) return;
+  const list = data.feedback || [];
+  $('feedbackStat').textContent = list.length ? `共 ${data.count} 則,平均 ${data.avg} 星` : '';
+  if (!list.length) { $('feedbackList').innerHTML = '<p class="muted">目前沒有回饋</p>'; return; }
+  $('feedbackList').innerHTML = list.map((f) => {
+    const stars = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+    return `<div class="fb-row">
+      <div class="fb-stars">${stars} <span class="fb-meta">${f.name}${f.hasLine ? ' 📱' : ''}・${f.date}(星期${f.weekday})・<a href="tel:${f.phone}">${f.phone}</a></span></div>
+      ${f.comment ? `<div class="fb-comment">${f.comment.replace(/</g, '&lt;')}</div>` : '<div class="fb-comment muted">(未留言)</div>'}
+      <button class="btn-sm danger" data-fb="${f.id}" style="margin-top:6px">刪除</button>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('[data-fb]').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('刪除這則回饋?')) return;
+    await adminPost('feedbackDelete', { id: btn.dataset.fb });
+    loadFeedbackAdmin();
+  }));
+}
 
 // ---- 候補名單 ----
 async function loadWaitlistAdmin() {

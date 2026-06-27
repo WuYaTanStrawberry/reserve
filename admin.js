@@ -24,6 +24,7 @@ async function enterApp() {
   applyConfig(data.config);
   renderWeeks(data.weeks);
   renderTodayStats(data.bookings);
+  renderTomorrow(data.tomorrow);
   $('filterDate').value = data.today;
   renderBookings(data.bookings);
   return { ok: true };
@@ -45,6 +46,11 @@ function renderTodayStats(list) {
     <div class="statcard ok"><div class="num">${cin}</div><div class="lbl">已報到</div></div>
     <div class="statcard"><div class="num">${list.length - cin}</div><div class="lbl">未報到</div></div>
     <div class="statcard"><div class="num">${cars}</div><div class="lbl">汽車總數</div></div>`;
+}
+function renderTomorrow(t) {
+  if (!t || !t.total) { $('tomorrowStat').innerHTML = ''; return; }
+  const wait = t.total - t.confirmed;
+  $('tomorrowStat').innerHTML = `<div class="banner ${wait > 0 ? 'warn' : 'ok'}" style="margin-bottom:12px">📅 明日(${t.date} 星期${t.weekday})${t.total} 筆預約・✅ 已確認 ${t.confirmed}・⏳ 待確認 ${wait}</div>`;
 }
 async function loadTodayStats() {
   const { ok, data } = await adminPost('bookings', { date: todayStr() });

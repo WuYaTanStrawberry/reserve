@@ -155,10 +155,11 @@ function renderBookings(list) {
     const veh = b.vehicle === 'car' ? `<span class="tag car">汽車 ×${b.cars}</span>` : '<span class="tag motor">機車</span>';
     const done = b.status === 'checkedin';
     const line = b.hasLine ? ' 📱' : '';
+    const conf = b.confirmed ? ' <span style="color:var(--ok)" title="已回覆會到">✅</span>' : '';
     html += `<tr class="${done ? 'checkedin' : ''}">
       <td>${b.date}<br><span class="muted">星期${b.weekday}</span></td>
       <td>${b.hourLabel}</td>
-      <td>${b.name}${line}</td>
+      <td>${b.name}${line}${conf}</td>
       <td><a href="tel:${b.phone}">${b.phone}</a></td>
       <td>${veh}</td>
       <td><button class="btn-sm ${done ? 'ok' : ''}" data-ci="${b.id}">${done ? '✓ 已報到' : '報到'}</button></td>

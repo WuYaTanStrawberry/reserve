@@ -268,6 +268,7 @@ function applyConfig(data) {
   $('cfgClose').value = data.closeHour;
   $('cfgReminder').value = data.reminderHour;
   $('cfgReviewUrl').value = data.reviewUrl || '';
+  $('cfgHolidays').value = (data.holidays || []).join('\n');
   renderClosedWeekdays(data.closedWeekdays || []);
   $('lineEnabled').checked = !!data.line.enabled;
   $('lineUrl').value = data.line.publicBaseUrl || '';
@@ -281,7 +282,7 @@ async function loadConfig() {
   if (ok) applyConfig(data);
 }
 async function saveConfig() {
-  const body = { capacity: $('cfgCapacity').value, openHour: $('cfgOpen').value, closeHour: $('cfgClose').value, reminderHour: $('cfgReminder').value, reviewUrl: $('cfgReviewUrl').value, closedWeekdays: readClosedWeekdays() };
+  const body = { capacity: $('cfgCapacity').value, openHour: $('cfgOpen').value, closeHour: $('cfgClose').value, reminderHour: $('cfgReminder').value, reviewUrl: $('cfgReviewUrl').value, holidays: $('cfgHolidays').value.split(/\s+/).map((s) => s.trim()).filter(Boolean), closedWeekdays: readClosedWeekdays() };
   const np = $('cfgPw').value.trim();
   if (np) body.newPassword = np;
   const { ok, data } = await adminPost('setConfig', body);

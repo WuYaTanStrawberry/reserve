@@ -57,10 +57,29 @@ async function loadDay() {
   if (data.past) { banner($('dateBanner'), 'err', '無法預約過去的日期'); $('slotSection').style.display = 'none'; return; }
   if (data.closedWeekday) { banner($('dateBanner'), 'warn', `星期${data.weekday}為公休日,暫不開放預約 🙏`); $('slotSection').style.display = 'none'; return; }
   if (!data.open) { banner($('dateBanner'), 'warn', `本週(含 ${date} 星期${data.weekday})目前尚未開放預約 🙏`); $('slotSection').style.display = 'none'; return; }
-  banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放,每時段 ${data.capacity} 個汽車車位`);
   capacity = data.capacity || capacity;
-  renderSlots(data.slots);
+  if (data.hourly) {
+    banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放,每時段 ${data.capacity} 個汽車車位`);
+    $('slotLabel').textContent = '選擇時段(數字為剩餘汽車車位)';
+    banner($('slotNote'), 'warn', '🍓 通常採草莓約 40~50 分鐘,一小時絕對夠用喔!');
+    renderSlots(data.slots);
+  } else {
+    banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放・平日不限採草莓時間,整天最多 ${data.capacity} 個車位`);
+    $('slotLabel').textContent = '本日預約(平日不限時)';
+    banner($('slotNote'), '', '');
+    renderDay(data.day);
+  }
   $('slotSection').style.display = 'block';
+}
+
+function renderDay(day) {
+  const box = $('slots');
+  box.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'slot' + (day.full ? ' full waitlistable' : '');
+  div.innerHTML = `<div class="lbl">本日 · 不限時</div><div class="left">${day.full ? '已額滿 · 可候補 →' : '剩 ' + day.left + ' 位'}</div>`;
+  div.addEventListener('click', () => selectSlot(div, { hour: -1, left: day.left }, day.full ? 'waitlist' : 'book'));
+  box.appendChild(div);
 }
 
 function selectSlot(div, s, m) {

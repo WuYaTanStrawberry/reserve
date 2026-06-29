@@ -59,21 +59,34 @@ async function loadRbSlots() {
   if (data.closedWeekday) { bn.innerHTML = `<div class="banner warn">星期${data.weekday}為公休日</div>`; return; }
   if (!data.open) { bn.innerHTML = '<div class="banner warn">該週尚未開放預約</div>'; return; }
   const need = booking.cars || 1;
-  data.slots.forEach((s) => {
-    const isCurrent = (date === booking.date && s.hour === booking.hour);
-    const enough = booking.vehicle !== 'car' || s.left >= need;
+  if (data.hourly) {
+    data.slots.forEach((s) => {
+      const isCurrent = (date === booking.date && s.hour === booking.hour);
+      const enough = booking.vehicle !== 'car' || s.left >= need;
+      const ok = enough && !isCurrent;
+      const div = document.createElement('div');
+      div.className = 'slot' + (ok ? '' : ' full');
+      div.innerHTML = `<div class="lbl">${s.label}</div><div class="left">${isCurrent ? '目前時段' : (enough ? '剩 ' + s.left + ' 位' : '車位不足')}</div>`;
+      if (ok) div.addEventListener('click', () => doRebook(date, s.hour));
+      slotsBox.appendChild(div);
+    });
+  } else {
+    const d = data.day;
+    const isCurrent = (date === booking.date && booking.hour < 0);
+    const enough = booking.vehicle !== 'car' || d.left >= need;
     const ok = enough && !isCurrent;
     const div = document.createElement('div');
     div.className = 'slot' + (ok ? '' : ' full');
-    div.innerHTML = `<div class="lbl">${s.label}</div><div class="left">${isCurrent ? '目前時段' : (enough ? '剩 ' + s.left + ' 位' : '車位不足')}</div>`;
-    if (ok) div.addEventListener('click', () => doRebook(date, s.hour));
+    div.innerHTML = `<div class="lbl">本日 · 不限時</div><div class="left">${isCurrent ? '目前' : (enough ? '剩 ' + d.left + ' 位' : '車位不足')}</div>`;
+    if (ok) div.addEventListener('click', () => doRebook(date, -1));
     slotsBox.appendChild(div);
-  });
+  }
 }
 
 async function doRebook(date, hour) {
   const pad = (n) => String(n).padStart(2, '0');
-  if (!confirm(`確定改到 ${date}(星期${'日一二三四五六'[new Date(date).getDay()]})${pad(hour)}:00-${pad(hour + 1)}:00 嗎?`)) return;
+  const label = hour < 0 ? '整天(不限時)' : `${pad(hour)}:00-${pad(hour + 1)}:00`;
+  if (!confirm(`確定改到 ${date}(星期${'日一二三四五六'[new Date(date).getDay()]})${label} 嗎?`)) return;
   const { ok, data } = await gasPost({ action: 'reschedule', token, date, hour });
   if (!ok) { document.getElementById('rbBanner').innerHTML = `<div class="banner err">${data.error || '改期失敗'}</div>`; return; }
   booking = data.booking;

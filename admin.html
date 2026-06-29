@@ -91,6 +91,7 @@
           <input type="date" id="audFrom" style="width:auto">
           <span>~</span>
           <input type="date" id="audTo" style="width:auto">
+          <input type="text" id="audTag" placeholder="標籤(選填,如 VIP)" style="width:auto">
           <button class="btn-sm" id="audGen">產生名單</button>
         </div>
         <div id="audResult"></div>
@@ -139,6 +140,22 @@
       </div>
 
       <div class="foot-link"><a href="#" id="logout">登出</a></div>
+
+      <div id="custModal" class="modal" style="display:none">
+        <div class="modal-box">
+          <h3 style="margin-top:0">顧客標籤 / 備註</h3>
+          <div class="muted" id="custWho"></div>
+          <label>標籤(逗號分隔,例:VIP, 常客, 注意)</label>
+          <input type="text" id="custTags" placeholder="VIP, 常客">
+          <label>備註(只有你看得到)</label>
+          <textarea id="custNote" rows="3" placeholder="例:喜歡大湖香水草莓、上次客訴已處理"></textarea>
+          <div id="custBanner"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="primary" id="custSave" style="flex:1;margin-top:0">儲存</button>
+            <button class="btn-sm" id="custCancel">取消</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

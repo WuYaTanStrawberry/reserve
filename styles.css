@@ -69,6 +69,15 @@ input[type=text], input[type=tel], input[type=date], select {
 .fb-row .fb-stars { color: var(--berry); letter-spacing: 2px; }
 .fb-row .fb-meta { font-size: .82rem; color: var(--muted); }
 .fb-row .fb-comment { margin-top: 4px; }
+
+/* 顧客標籤 / 熟客 / 編輯彈窗 */
+.ctags { margin-top: 4px; }
+.ctag { display: inline-block; background: #fff0f3; color: var(--berry-dark); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: .75rem; margin-right: 4px; }
+.visits { font-size: .8rem; color: var(--berry); font-weight: 600; }
+.btn-xs { padding: 2px 7px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; font-size: .72rem; color: var(--muted); }
+.btn-xs:hover { background: #faf0f2; }
+.modal { position: fixed; inset: 0; background: rgba(43, 32, 36, .45); display: flex; align-items: center; justify-content: center; z-index: 9998; padding: 16px; }
+.modal-box { background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 420px; box-shadow: var(--shadow); }
 .slot.full .left { color: var(--full); }
 .slot.selected { border-color: var(--berry); background: #fff0f3; box-shadow: 0 0 0 3px #fbd9e1; }
 .veh { display: flex; gap: 10px; margin-top: 6px; }

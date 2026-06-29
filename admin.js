@@ -4,6 +4,7 @@ let KEY = localStorage.getItem('adminKey') || '';
 let uiReady = false;
 
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
+const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 function todayStr() { const t = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; }
 async function adminPost(action, extra) { return gasPost(Object.assign({ action, key: KEY }, extra || {})); }
 
@@ -162,10 +163,14 @@ function renderBookings(list) {
     const done = b.status === 'checkedin';
     const line = b.hasLine ? ' 📱' : '';
     const conf = b.confirmed ? ' <span style="color:var(--ok)" title="已回覆會到">✅</span>' : '';
+    const tagChips = (b.tags || '').split(/[,、\s]+/).filter(Boolean).map((t) => `<span class="ctag">${esc(t)}</span>`).join('');
+    const visits = b.visits > 0 ? ` <span class="visits" title="已報到次數">🔁${b.visits}</span>` : '';
     html += `<tr class="${done ? 'checkedin' : ''}">
       <td>${b.date}<br><span class="muted">星期${b.weekday}</span></td>
       <td>${b.hourLabel}</td>
-      <td>${b.name}${line}${conf}</td>
+      <td>${b.name}${line}${conf}${visits}${b.note ? ' 📝' : ''}
+        <div class="ctags">${tagChips}<button class="btn-xs editc" data-phone="${esc(b.phone)}" data-name="${esc(b.name)}" data-tags="${esc(b.tags)}" data-note="${esc(b.note)}">✎ 標籤</button></div>
+      </td>
       <td><a href="tel:${b.phone}">${b.phone}</a></td>
       <td>${veh}</td>
       <td><button class="btn-sm ${done ? 'ok' : ''}" data-ci="${b.id}">${done ? '✓ 已報到' : '報到'}</button></td>
@@ -174,6 +179,7 @@ function renderBookings(list) {
   });
   html += '</tbody></table>';
   $('bookingList').innerHTML = html;
+  document.querySelectorAll('.editc').forEach((btn) => btn.addEventListener('click', () => openCustomerModal(btn.dataset.phone, btn.dataset.name, btn.dataset.tags, btn.dataset.note)));
   document.querySelectorAll('[data-ci]').forEach((btn) => btn.addEventListener('click', async () => { await adminPost('checkin', { id: btn.dataset.ci }); loadBookings(); loadTodayStats(); }));
   document.querySelectorAll('[data-del]').forEach((btn) => btn.addEventListener('click', async () => {
     if (!confirm('確定取消這筆預約?車位會立即釋出。')) return;
@@ -203,6 +209,23 @@ async function loadWeeks() {
   if (ok) renderWeeks(data.weeks);
 }
 
+// ---- 顧客標籤 / 備註 ----
+let custPhone = '';
+function openCustomerModal(phone, name, tags, note) {
+  custPhone = phone;
+  $('custWho').textContent = `${name}・${phone}`;
+  $('custTags').value = tags || '';
+  $('custNote').value = note || '';
+  banner($('custBanner'), '', '');
+  $('custModal').style.display = 'flex';
+}
+async function saveCustomer() {
+  const { ok, data } = await adminPost('setCustomer', { phone: custPhone, tags: $('custTags').value.trim(), note: $('custNote').value.trim() });
+  if (!ok) { banner($('custBanner'), 'err', data.error || '儲存失敗'); return; }
+  $('custModal').style.display = 'none';
+  loadBookings();
+}
+
 // ---- 受眾匯出 ----
 function downloadText(name, text) {
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -216,6 +239,7 @@ async function genAudience() {
   const extra = {};
   if ($('audFrom').value) extra.from = $('audFrom').value;
   if ($('audTo').value) extra.to = $('audTo').value;
+  if ($('audTag').value.trim()) extra.tag = $('audTag').value.trim();
   const { ok, data } = await adminPost('audience', extra);
   if (!ok) { banner($('audResult'), 'err', data.error || '產生失敗'); return; }
   if (!data.count) {
@@ -295,6 +319,8 @@ $('saveLine').addEventListener('click', saveLine);
 $('testLine').addEventListener('click', testLine);
 $('nbSubmit').addEventListener('click', newBooking);
 $('audGen').addEventListener('click', genAudience);
+$('custSave').addEventListener('click', saveCustomer);
+$('custCancel').addEventListener('click', () => { $('custModal').style.display = 'none'; });
 $('logout').addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('adminKey'); location.reload(); });
 
 if (KEY) enterApp(); // 已記住登入 → 直接進(一支 adminInit)

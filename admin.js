@@ -35,6 +35,7 @@ function setupAdminUI() {
   uiReady = true;
   const t = new Date(); const pad = (n) => String(n).padStart(2, '0');
   $('nbDate').min = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  $('nbDate').addEventListener('change', loadNbAvailability);
   document.querySelectorAll('input[name=nbVehicle]').forEach((r) => r.addEventListener('change', updateNbVeh));
 }
 
@@ -71,6 +72,25 @@ function buildNewBookingForm(cfg) {
   for (let i = 1; i <= cfg.capacity; i++) c += `<option value="${i}">${i} 台</option>`;
   $('nbCars').innerHTML = c;
 }
+// 選日期後即時顯示該日空位(假日:各時段剩餘;平日:整天剩餘)
+async function loadNbAvailability() {
+  const date = $('nbDate').value;
+  if (!date) return;
+  const { data } = await gasGet({ action: 'availability', date });
+  if (data.error) { banner($('nbAvail'), 'err', data.error); return; }
+  const hints = [];
+  if (data.closedWeekday) hints.push('此日為公休日(手動登記仍可)');
+  else if (!data.open) hints.push('該週未開放(手動登記仍可)');
+  if (data.hourly) {
+    $('nbHourWrap').style.display = 'block';
+    $('nbHour').innerHTML = data.slots.map((s) => `<option value="${s.hour}">${s.label}(${s.full ? '已滿' : '剩 ' + s.left + ' 位'})</option>`).join('');
+    banner($('nbAvail'), 'ok', `${data.date}(星期${data.weekday})六日/連假・一小時制${hints.length ? '・' + hints.join('・') : ''}`);
+  } else {
+    $('nbHourWrap').style.display = 'none';
+    banner($('nbAvail'), data.day.full ? 'warn' : 'ok', `${data.date}(星期${data.weekday})平日不限時・${data.day.full ? '⚠️ 已額滿(機車仍可登記)' : '整天剩 ' + data.day.left + ' 位'}${hints.length ? '・' + hints.join('・') : ''}`);
+  }
+}
+
 async function newBooking() {
   const date = $('nbDate').value;
   const hour = $('nbHour').value;
@@ -87,7 +107,7 @@ async function newBooking() {
   if (!ok) { banner($('nbBanner'), 'err', data.error || '新增失敗'); return; }
   banner($('nbBanner'), 'ok', '已新增 ✅' + (data.notified ? ',確認通知已發到你的 LINE 📱' : ''));
   $('nbName').value = ''; $('nbPhone').value = '';
-  loadBookings(); loadWeeks(); loadTodayStats();
+  loadBookings(); loadWeeks(); loadTodayStats(); loadNbAvailability();
   setTimeout(() => banner($('nbBanner'), '', ''), 3000);
 }
 

@@ -49,8 +49,11 @@
         <p class="muted" style="margin-top:0">電話 / 現場預約由你直接登記。不受「開放週次、公休日」限制,但仍會檢查車位是否足夠。若已設定 LINE 與你的 userId,新增後會推一則確認到你自己的 LINE。</p>
         <label for="nbDate">日期</label>
         <input type="date" id="nbDate">
-        <label for="nbHour">時段</label>
-        <select id="nbHour"></select>
+        <div id="nbAvail"></div>
+        <div id="nbHourWrap">
+          <label for="nbHour">時段(括號內為剩餘車位)</label>
+          <select id="nbHour"></select>
+        </div>
         <label>車輛種類</label>
         <div class="veh">
           <label><input type="radio" name="nbVehicle" value="car" checked><span>🚗 汽車</span></label>

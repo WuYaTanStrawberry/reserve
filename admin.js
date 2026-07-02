@@ -81,14 +81,10 @@ async function loadNbAvailability() {
   const hints = [];
   if (data.closedWeekday) hints.push('此日為公休日(手動登記仍可)');
   else if (!data.open) hints.push('該週未開放(手動登記仍可)');
-  if (data.hourly) {
-    $('nbHourWrap').style.display = 'block';
-    $('nbHour').innerHTML = data.slots.map((s) => `<option value="${s.hour}">${s.label}(${s.full ? '已滿' : '剩 ' + s.left + ' 位'})</option>`).join('');
-    banner($('nbAvail'), 'ok', `${data.date}(星期${data.weekday})六日/連假・一小時制${hints.length ? '・' + hints.join('・') : ''}`);
-  } else {
-    $('nbHourWrap').style.display = 'none';
-    banner($('nbAvail'), data.day.full ? 'warn' : 'ok', `${data.date}(星期${data.weekday})平日不限時・${data.day.full ? '⚠️ 已額滿(機車仍可登記)' : '整天剩 ' + data.day.left + ' 位'}${hints.length ? '・' + hints.join('・') : ''}`);
-  }
+  const arrivalStyle = !data.timeLimited;
+  $('nbHourWrap').style.display = 'block';
+  $('nbHour').innerHTML = data.slots.map((s) => `<option value="${s.hour}">${arrivalStyle ? String(s.hour).padStart(2, '0') + ':00 到達' : s.label}(${s.full ? '已滿' : '剩 ' + s.left + ' 位'})</option>`).join('');
+  banner($('nbAvail'), 'ok', `${data.date}(星期${data.weekday})${data.timeLimited ? '六日/連假・一小時制' : '平日・不限採果時間(依到達時段控管車位)'}${hints.length ? '・' + hints.join('・') : ''}`);
 }
 
 async function newBooking() {
@@ -102,7 +98,7 @@ async function newBooking() {
   if (!name) { banner($('nbBanner'), 'err', '請填寫姓名'); return; }
   if (!phone) { banner($('nbBanner'), 'err', '請填寫電話'); return; }
   const btn = $('nbSubmit'); btn.disabled = true;
-  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone, arrival: $('nbArrival').value.trim() });
+  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone });
   btn.disabled = false;
   if (!ok) { banner($('nbBanner'), 'err', data.error || '新增失敗'); return; }
   banner($('nbBanner'), 'ok', '已新增 ✅' + (data.notified ? ',確認通知已發到你的 LINE 📱' : ''));

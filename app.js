@@ -3,21 +3,8 @@ const $ = (id) => document.getElementById(id);
 let selectedHour = null;
 let selectedLeft = 0;
 let capacity = 9;
-let openHour = 8;
-let closeHour = 17;
 let mode = 'book';        // 'book' 或 'waitlist'
 let lineUserId = '';
-
-function populateArrival() {
-  const sel = $('arrival');
-  const pad = (n) => String(n).padStart(2, '0');
-  let html = '<option value="">還不確定</option>';
-  for (let h = openHour; h < closeHour; h++) {
-    html += `<option value="${pad(h)}:00">${pad(h)}:00</option>`;
-    html += `<option value="${pad(h)}:30">${pad(h)}:30</option>`;
-  }
-  sel.innerHTML = html;
-}
 
 function populateQty() {
   const sel = $('carQty');
@@ -33,8 +20,6 @@ function updateVehUI() {
 async function init() {
   const { data: config } = await gasGet({ action: 'config' });
   capacity = config.capacity || 9;
-  openHour = config.openHour != null ? config.openHour : 8;
-  closeHour = config.closeHour != null ? config.closeHour : 17;
 
   if (config.liffId && window.liff) {
     try {
@@ -73,28 +58,18 @@ async function loadDay() {
   if (data.closedWeekday) { banner($('dateBanner'), 'warn', `星期${data.weekday}為公休日,暫不開放預約 🙏`); $('slotSection').style.display = 'none'; return; }
   if (!data.open) { banner($('dateBanner'), 'warn', `本週(含 ${date} 星期${data.weekday})目前尚未開放預約 🙏`); $('slotSection').style.display = 'none'; return; }
   capacity = data.capacity || capacity;
-  if (data.hourly) {
+  if (data.timeLimited) {
     banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放,每時段 ${data.capacity} 個汽車車位`);
     $('slotLabel').textContent = '選擇時段(數字為剩餘汽車車位)';
     banner($('slotNote'), 'warn', '🍓 通常採草莓約 40~50 分鐘,一小時絕對夠用喔!');
-    renderSlots(data.slots);
+    renderSlots(data.slots, false);
   } else {
-    banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放・平日不限採草莓時間,整天最多 ${data.capacity} 個車位`);
-    $('slotLabel').textContent = '本日預約(平日不限時)';
-    banner($('slotNote'), '', '');
-    renderDay(data.day);
+    banner($('dateBanner'), 'ok', `${date}(星期${data.weekday})已開放,每時段 ${data.capacity} 個汽車車位`);
+    $('slotLabel').textContent = '選擇預計到達時段(數字為剩餘車位)';
+    banner($('slotNote'), 'warn', '🍓 平日不限採果時間!選您「預計到達」的時段即可,想採多久都可以~');
+    renderSlots(data.slots, true);
   }
   $('slotSection').style.display = 'block';
-}
-
-function renderDay(day) {
-  const box = $('slots');
-  box.innerHTML = '';
-  const div = document.createElement('div');
-  div.className = 'slot' + (day.full ? ' full waitlistable' : '');
-  div.innerHTML = `<div class="lbl">本日 · 不限時</div><div class="left">${day.full ? '已額滿 · 可候補 →' : '剩 ' + day.left + ' 位'}</div>`;
-  div.addEventListener('click', () => selectSlot(div, { hour: -1, left: day.left }, day.full ? 'waitlist' : 'book'));
-  box.appendChild(div);
 }
 
 function selectSlot(div, s, m) {
@@ -105,9 +80,6 @@ function selectSlot(div, s, m) {
   mode = m;
   populateQty();
   updateVehUI();
-  // 平日整天制且是「預約」(非候補)時,提供預計到達時間
-  if (s.hour === -1 && m === 'book') { populateArrival(); $('arrivalWrap').style.display = 'block'; }
-  else { $('arrivalWrap').style.display = 'none'; }
   if (m === 'waitlist') {
     banner($('modeNote'), 'warn', '此時段已額滿,你正在「加入候補」。有人取消釋出車位時,系統會用 LINE 通知你(需從 LINE 進來預約才收得到通知)。');
     $('submitBtn').textContent = '加入候補名單';
@@ -119,13 +91,14 @@ function selectSlot(div, s, m) {
   banner($('formBanner'), '', '');
 }
 
-function renderSlots(slots) {
+function renderSlots(slots, arrivalStyle) {
   const box = $('slots');
   box.innerHTML = '';
   slots.forEach((s) => {
+    const label = arrivalStyle ? `${String(s.hour).padStart(2, '0')}:00 到達` : s.label;
     const div = document.createElement('div');
     div.className = 'slot' + (s.full ? ' full waitlistable' : '');
-    div.innerHTML = `<div class="lbl">${s.label}</div><div class="left">${s.full ? '已額滿 · 可候補 →' : '剩 ' + s.left + ' 位'}</div>`;
+    div.innerHTML = `<div class="lbl">${label}</div><div class="left">${s.full ? '已額滿 · 可候補 →' : '剩 ' + s.left + ' 位'}</div>`;
     div.addEventListener('click', () => selectSlot(div, s, s.full ? 'waitlist' : 'book'));
     box.appendChild(div);
   });
@@ -148,8 +121,7 @@ async function submit() {
     if (!ok) { banner($('formBanner'), 'err', data.error || '加入候補失敗'); return; }
     showWaitlistSuccess(date);
   } else {
-    const arrival = selectedHour === -1 ? ($('arrival').value || '') : '';
-    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, arrival, lineUserId });
+    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId });
     $('submitBtn').disabled = false;
     if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); loadDay(); return; }
     showSuccess(data.booking);

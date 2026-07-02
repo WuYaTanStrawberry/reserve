@@ -59,29 +59,19 @@ async function loadRbSlots() {
   if (data.past) { bn.innerHTML = '<div class="banner err">無法改到過去的日期</div>'; return; }
   if (data.closedWeekday) { bn.innerHTML = `<div class="banner warn">星期${data.weekday}為公休日</div>`; return; }
   if (!data.open) { bn.innerHTML = '<div class="banner warn">該週尚未開放預約</div>'; return; }
+  if (!data.timeLimited) bn.innerHTML = '<div class="banner warn">🍓 平日不限採果時間,選「預計到達」的時段即可</div>';
   const need = booking.cars || 1;
-  if (data.hourly) {
-    data.slots.forEach((s) => {
-      const isCurrent = (date === booking.date && s.hour === booking.hour);
-      const enough = booking.vehicle !== 'car' || s.left >= need;
-      const ok = enough && !isCurrent;
-      const div = document.createElement('div');
-      div.className = 'slot' + (ok ? '' : ' full');
-      div.innerHTML = `<div class="lbl">${s.label}</div><div class="left">${isCurrent ? '目前時段' : (enough ? '剩 ' + s.left + ' 位' : '車位不足')}</div>`;
-      if (ok) div.addEventListener('click', () => doRebook(date, s.hour));
-      slotsBox.appendChild(div);
-    });
-  } else {
-    const d = data.day;
-    const isCurrent = (date === booking.date && booking.hour < 0);
-    const enough = booking.vehicle !== 'car' || d.left >= need;
+  data.slots.forEach((s) => {
+    const label = data.timeLimited ? s.label : `${String(s.hour).padStart(2, '0')}:00 到達`;
+    const isCurrent = (date === booking.date && s.hour === booking.hour);
+    const enough = booking.vehicle !== 'car' || s.left >= need;
     const ok = enough && !isCurrent;
     const div = document.createElement('div');
     div.className = 'slot' + (ok ? '' : ' full');
-    div.innerHTML = `<div class="lbl">本日 · 不限時</div><div class="left">${isCurrent ? '目前' : (enough ? '剩 ' + d.left + ' 位' : '車位不足')}</div>`;
-    if (ok) div.addEventListener('click', () => doRebook(date, -1));
+    div.innerHTML = `<div class="lbl">${label}</div><div class="left">${isCurrent ? '目前時段' : (enough ? '剩 ' + s.left + ' 位' : '車位不足')}</div>`;
+    if (ok) div.addEventListener('click', () => doRebook(date, s.hour));
     slotsBox.appendChild(div);
-  }
+  });
 }
 
 async function doRebook(date, hour) {

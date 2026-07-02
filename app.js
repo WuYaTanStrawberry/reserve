@@ -3,8 +3,21 @@ const $ = (id) => document.getElementById(id);
 let selectedHour = null;
 let selectedLeft = 0;
 let capacity = 9;
+let openHour = 8;
+let closeHour = 17;
 let mode = 'book';        // 'book' 或 'waitlist'
 let lineUserId = '';
+
+function populateArrival() {
+  const sel = $('arrival');
+  const pad = (n) => String(n).padStart(2, '0');
+  let html = '<option value="">還不確定</option>';
+  for (let h = openHour; h < closeHour; h++) {
+    html += `<option value="${pad(h)}:00">${pad(h)}:00</option>`;
+    html += `<option value="${pad(h)}:30">${pad(h)}:30</option>`;
+  }
+  sel.innerHTML = html;
+}
 
 function populateQty() {
   const sel = $('carQty');
@@ -20,6 +33,8 @@ function updateVehUI() {
 async function init() {
   const { data: config } = await gasGet({ action: 'config' });
   capacity = config.capacity || 9;
+  openHour = config.openHour != null ? config.openHour : 8;
+  closeHour = config.closeHour != null ? config.closeHour : 17;
 
   if (config.liffId && window.liff) {
     try {
@@ -90,6 +105,9 @@ function selectSlot(div, s, m) {
   mode = m;
   populateQty();
   updateVehUI();
+  // 平日整天制且是「預約」(非候補)時,提供預計到達時間
+  if (s.hour === -1 && m === 'book') { populateArrival(); $('arrivalWrap').style.display = 'block'; }
+  else { $('arrivalWrap').style.display = 'none'; }
   if (m === 'waitlist') {
     banner($('modeNote'), 'warn', '此時段已額滿,你正在「加入候補」。有人取消釋出車位時,系統會用 LINE 通知你(需從 LINE 進來預約才收得到通知)。');
     $('submitBtn').textContent = '加入候補名單';
@@ -130,7 +148,8 @@ async function submit() {
     if (!ok) { banner($('formBanner'), 'err', data.error || '加入候補失敗'); return; }
     showWaitlistSuccess(date);
   } else {
-    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId });
+    const arrival = selectedHour === -1 ? ($('arrival').value || '') : '';
+    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, arrival, lineUserId });
     $('submitBtn').disabled = false;
     if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); loadDay(); return; }
     showSuccess(data.booking);
@@ -149,6 +168,7 @@ function showSuccess(b) {
         <tr><th>電話</th><td>${b.phone}</td></tr>
         <tr><th>日期</th><td>${b.date}(星期${b.weekday})</td></tr>
         <tr><th>時段</th><td>${b.hourLabel}</td></tr>
+        ${b.arrival ? `<tr><th>預計到達</th><td>${b.arrival}</td></tr>` : ''}
         <tr><th>車輛</th><td>${veh}</td></tr>
       </table>
       <div class="banner warn" style="margin-top:12px">⏰ 車位保留至預約時段開始後 <b>10 分鐘</b>,逾時將先開放給現場客人,敬請準時到達 🙏</div>

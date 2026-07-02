@@ -82,7 +82,7 @@ async function newBooking() {
   if (!name) { banner($('nbBanner'), 'err', '請填寫姓名'); return; }
   if (!phone) { banner($('nbBanner'), 'err', '請填寫電話'); return; }
   const btn = $('nbSubmit'); btn.disabled = true;
-  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone });
+  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone, arrival: $('nbArrival').value.trim() });
   btn.disabled = false;
   if (!ok) { banner($('nbBanner'), 'err', data.error || '新增失敗'); return; }
   banner($('nbBanner'), 'ok', '已新增 ✅' + (data.notified ? ',確認通知已發到你的 LINE 📱' : ''));
@@ -167,7 +167,7 @@ function renderBookings(list) {
     const visits = b.visits > 0 ? ` <span class="visits" title="已報到次數">🔁${b.visits}</span>` : '';
     html += `<tr class="${done ? 'checkedin' : ''}">
       <td>${b.date}<br><span class="muted">星期${b.weekday}</span></td>
-      <td>${b.hourLabel}</td>
+      <td>${b.hourLabel}${b.arrival ? `<br><span class="muted">預計 ${b.arrival}</span>` : ''}</td>
       <td>${b.name}${line}${conf}${visits}${b.note ? ' 📝' : ''}
         <div class="ctags">${tagChips}<button class="btn-xs editc" data-phone="${esc(b.phone)}" data-name="${esc(b.name)}" data-tags="${esc(b.tags)}" data-note="${esc(b.note)}">✎ 標籤</button></div>
       </td>

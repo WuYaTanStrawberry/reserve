@@ -17,17 +17,21 @@ function _overlayEl() {
 function showLoading() { _pending++; _overlayEl().classList.add('show'); }
 function hideLoading() { _pending = Math.max(0, _pending - 1); if (_pending === 0) _overlayEl().classList.remove('show'); }
 
-async function gasGet(params) {
-  showLoading();
+// opts.silent = true 時不顯示轉圈遮罩(供背景更新使用)
+async function gasGet(params, opts) {
+  const silent = opts && opts.silent;
+  if (!silent) showLoading();
   try {
     const u = new URL(API_BASE);
     Object.keys(params).forEach((k) => u.searchParams.set(k, params[k]));
     const r = await fetch(u.toString());
     return { ok: r.ok, data: await r.json().catch(() => ({})) };
-  } finally { hideLoading(); }
+  } catch (e) { return { ok: false, data: {} }; }
+  finally { if (!silent) hideLoading(); }
 }
-async function gasPost(body) {
-  showLoading();
+async function gasPost(body, opts) {
+  const silent = opts && opts.silent;
+  if (!silent) showLoading();
   try {
     const r = await fetch(API_BASE, {
       method: 'POST',
@@ -36,5 +40,6 @@ async function gasPost(body) {
     });
     const data = await r.json().catch(() => ({}));
     return { ok: r.ok && !data.error, data };
-  } finally { hideLoading(); }
+  } catch (e) { return { ok: false, data: {} }; }
+  finally { if (!silent) hideLoading(); }
 }

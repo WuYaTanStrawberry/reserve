@@ -17,20 +17,24 @@ function updateVehUI() {
   $('carQtyWrap').style.display = isCar ? 'block' : 'none';
 }
 
-async function init() {
-  const { data: config } = await gasGet({ action: 'config' });
-  capacity = config.capacity || 9;
+// LIFF 改為背景初始化:不擋頁面載入,取得身分後自動帶入姓名
+function initLiff(liffId) {
+  if (!liffId || !window.liff || initLiff.done) return;
+  initLiff.done = true;
+  liff.init({ liffId }).then(async () => {
+    if (liff.isLoggedIn()) {
+      const prof = await liff.getProfile();
+      lineUserId = prof.userId;
+      if (prof.displayName && !$('name').value) $('name').value = prof.displayName;
+    }
+  }).catch(() => { /* 非 LINE 環境,忽略 */ });
+}
 
-  if (config.liffId && window.liff) {
-    try {
-      await liff.init({ liffId: config.liffId });
-      if (liff.isLoggedIn()) {
-        const prof = await liff.getProfile();
-        lineUserId = prof.userId;
-        if (prof.displayName && !$('name').value) $('name').value = prof.displayName;
-      }
-    } catch (e) { /* 非 LINE 環境,忽略 */ }
-  }
+async function init() {
+  // 頁面立即可用:先套用上次快取的設定,再背景更新
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem('cfgCache') || 'null'); } catch (e) {}
+  if (cached) { capacity = cached.capacity || 9; initLiff(cached.liffId); }
 
   const dateEl = $('date');
   const t = new Date();
@@ -43,16 +47,43 @@ async function init() {
   // 候補通知連結會帶 ?date=,自動帶入並查詢
   const qd = new URLSearchParams(location.search).get('date');
   if (qd && /^\d{4}-\d{2}-\d{2}$/.test(qd) && qd >= today) { dateEl.value = qd; loadDay(); }
+
+  // 取得最新設定(有快取時靜默進行,不轉圈)
+  const { data: config } = await gasGet({ action: 'config' }, { silent: !!cached });
+  if (config && config.capacity) {
+    localStorage.setItem('cfgCache', JSON.stringify(config));
+    capacity = config.capacity;
+    initLiff(config.liffId);
+  }
 }
 
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
 
+// 空位查詢快取 60 秒:重看同一天立即顯示,並在背景更新
+const AV_TTL = 60 * 1000;
 async function loadDay() {
   selectedHour = null;
   $('formSection').style.display = 'none';
   const date = $('date').value;
   if (!date) return;
+  let cached = null;
+  try { cached = JSON.parse(sessionStorage.getItem('av:' + date) || 'null'); } catch (e) {}
+  if (cached && Date.now() - cached.t < AV_TTL) {
+    renderAvailability(date, cached.data);
+    refreshDay(date); // 背景拿最新,若客人尚未選時段會自動更新畫面
+    return;
+  }
   const { data } = await gasGet({ action: 'availability', date });
+  if (!data.error) sessionStorage.setItem('av:' + date, JSON.stringify({ t: Date.now(), data }));
+  renderAvailability(date, data);
+}
+async function refreshDay(date) {
+  const { data } = await gasGet({ action: 'availability', date }, { silent: true });
+  if (!data || data.error) return;
+  sessionStorage.setItem('av:' + date, JSON.stringify({ t: Date.now(), data }));
+  if ($('date').value === date && selectedHour == null) renderAvailability(date, data);
+}
+function renderAvailability(date, data) {
   if (data.error) { banner($('dateBanner'), 'err', data.error); $('slotSection').style.display = 'none'; return; }
   if (data.past) { banner($('dateBanner'), 'err', '無法預約過去的日期'); $('slotSection').style.display = 'none'; return; }
   if (data.closedWeekday) { banner($('dateBanner'), 'warn', `星期${data.weekday}為公休日,暫不開放預約 🙏`); $('slotSection').style.display = 'none'; return; }
@@ -123,7 +154,7 @@ async function submit() {
   } else {
     const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId });
     $('submitBtn').disabled = false;
-    if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); loadDay(); return; }
+    if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); sessionStorage.removeItem('av:' + date); loadDay(); return; }
     showSuccess(data.booking);
   }
 }

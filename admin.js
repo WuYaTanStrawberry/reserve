@@ -6,7 +6,7 @@ let uiReady = false;
 function banner(el, type, msg) { el.innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : ''; }
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 function todayStr() { const t = new Date(); const p = (n) => String(n).padStart(2, '0'); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; }
-async function adminPost(action, extra) { return gasPost(Object.assign({ action, key: KEY }, extra || {})); }
+async function adminPost(action, extra, opts) { return gasPost(Object.assign({ action, key: KEY }, extra || {}), opts); }
 
 // ---- 登入 / 進入(只用一支 adminInit,加快速度)----
 async function login() {
@@ -16,9 +16,7 @@ async function login() {
   if (r.ok) { localStorage.setItem('adminKey', KEY); banner($('loginBanner'), '', ''); }
   else { KEY = ''; banner($('loginBanner'), 'err', r.error || '密碼錯誤'); }
 }
-async function enterApp() {
-  const { ok, data } = await adminPost('adminInit');
-  if (!ok) return { ok: false, error: data.error };
+function renderInit(data) {
   setupAdminUI();
   $('loginCard').style.display = 'none';
   $('app').style.display = 'block';
@@ -28,6 +26,23 @@ async function enterApp() {
   renderTomorrow(data.tomorrow);
   $('filterDate').value = data.today;
   renderBookings(data.bookings);
+}
+async function enterApp() {
+  // 先畫上次快取的資料(立即可用),再抓最新資料靜默更新
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem('adminInitCache') || 'null'); } catch (e) {}
+  if (cached) renderInit(cached);
+  const { ok, data } = await adminPost('adminInit', {}, { silent: !!cached });
+  if (!ok) {
+    if (cached) { // 密碼已失效 → 清快取退回登入
+      localStorage.removeItem('adminInitCache');
+      $('app').style.display = 'none';
+      $('loginCard').style.display = 'block';
+    }
+    return { ok: false, error: data.error };
+  }
+  localStorage.setItem('adminInitCache', JSON.stringify(data));
+  renderInit(data);
   return { ok: true };
 }
 function setupAdminUI() {
@@ -338,6 +353,6 @@ $('nbSubmit').addEventListener('click', newBooking);
 $('audGen').addEventListener('click', genAudience);
 $('custSave').addEventListener('click', saveCustomer);
 $('custCancel').addEventListener('click', () => { $('custModal').style.display = 'none'; });
-$('logout').addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('adminKey'); location.reload(); });
+$('logout').addEventListener('click', (e) => { e.preventDefault(); localStorage.removeItem('adminKey'); localStorage.removeItem('adminInitCache'); location.reload(); });
 
 if (KEY) enterApp(); // 已記住登入 → 直接進(一支 adminInit)

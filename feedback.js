@@ -43,7 +43,7 @@ async function submit() {
 }
 
 function thanks() {
-  if (rating >= 4) {
+  if (rating >= 3) {
     box.innerHTML = `
       <div class="success-box">
         <div class="big">🌟</div>
@@ -56,8 +56,7 @@ function thanks() {
       <div class="success-box">
         <div class="big">🙏</div>
         <h2>謝謝您誠實的回饋</h2>
-        <p class="muted">我們收到了,會認真改進;若需要,我們會盡快與您聯繫。</p>
-        ${reviewUrl ? `<p class="note">也歡迎到 <a href="${reviewUrl}" target="_blank" rel="noopener">Google</a> 留下您的建議。</p>` : ''}
+        <p class="muted">我們已經收到您的意見,會認真檢討改進;若需要,我們會盡快與您聯繫,謝謝您給我們變得更好的機會 🍓</p>
       </div>`;
   }
 }

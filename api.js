@@ -17,6 +17,9 @@ function _overlayEl() {
 function showLoading() { _pending++; _overlayEl().classList.add('show'); }
 function hideLoading() { _pending = Math.max(0, _pending - 1); if (_pending === 0) _overlayEl().classList.remove('show'); }
 
+// 將任何字串視為純文字顯示(HTML 轉義,防 XSS)——所有頁面共用
+function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
 // opts.silent = true 時不顯示轉圈遮罩(供背景更新使用)
 async function gasGet(params, opts) {
   const silent = opts && opts.silent;

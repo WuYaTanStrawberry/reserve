@@ -16,8 +16,8 @@ function render() {
   const b = booking;
   box.innerHTML = `
     <table>
-      <tr><th>姓名</th><td>${b.name}</td></tr>
-      <tr><th>電話</th><td>${b.phone}</td></tr>
+      <tr><th>姓名</th><td>${escHtml(b.name)}</td></tr>
+      <tr><th>電話</th><td>${escHtml(b.phone)}</td></tr>
       <tr><th>日期</th><td>${b.date}(星期${b.weekday})</td></tr>
       <tr><th>時段</th><td>${b.hourLabel}</td></tr>
       ${b.arrival ? `<tr><th>預計到達</th><td>${b.arrival}</td></tr>` : ''}

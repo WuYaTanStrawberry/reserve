@@ -17,7 +17,7 @@ async function load() {
 
 function render(b) {
   box.innerHTML = `
-    <p>嗨 ${b.name},謝謝您 ${b.date} 的光臨 🍓</p>
+    <p>嗨 ${escHtml(b.name)},謝謝您 ${b.date} 的光臨 🍓</p>
     <label>整體滿意度(點星星)</label>
     <div class="stars" id="stars">${[1, 2, 3, 4, 5].map((n) => `<span data-n="${n}">☆</span>`).join('')}</div>
     <label for="cmt">想對我們說的話(選填)</label>

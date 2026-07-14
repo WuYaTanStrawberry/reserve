@@ -167,17 +167,17 @@ function showSuccess(b) {
       <h2>預約成功!</h2>
       <p class="muted">期待您的到來 🍓</p>
       <table style="margin-top:10px">
-        <tr><th>姓名</th><td>${b.name}</td></tr>
-        <tr><th>電話</th><td>${b.phone}</td></tr>
+        <tr><th>姓名</th><td>${escHtml(b.name)}</td></tr>
+        <tr><th>電話</th><td>${escHtml(b.phone)}</td></tr>
         <tr><th>日期</th><td>${b.date}(星期${b.weekday})</td></tr>
         <tr><th>時段</th><td>${b.hourLabel}</td></tr>
-        ${b.arrival ? `<tr><th>預計到達</th><td>${b.arrival}</td></tr>` : ''}
+        ${b.arrival ? `<tr><th>預計到達</th><td>${escHtml(b.arrival)}</td></tr>` : ''}
         <tr><th>車輛</th><td>${veh}</td></tr>
       </table>
       <div class="banner warn" style="margin-top:12px">⏰ 車位保留至預約時段開始後 <b>10 分鐘</b>,逾時將先開放給現場客人,敬請準時到達 🙏</div>
-      <a class="primary" style="display:block;text-align:center;text-decoration:none;background:#fff;color:var(--berry);border:1.5px solid var(--berry)" href="cancel.html?token=${b.cancelToken}">查看 / 改期 / 取消這筆預約</a>
+      <a class="primary" style="display:block;text-align:center;text-decoration:none;background:#fff;color:var(--berry);border:1.5px solid var(--berry)" href="cancel.html?token=${encodeURIComponent(b.cancelToken)}">查看 / 改期 / 取消這筆預約</a>
       <p class="note">💡 想改時間或取消,從上方連結即可(可改期不必重訂)。</p>
-      <button class="primary" onclick="location.reload()">再預約一筆</button>
+      <button class="primary" id="reloadBtn">再預約一筆</button>
     </div>`;
 }
 
@@ -189,9 +189,12 @@ function showWaitlistSuccess(date) {
       <p class="muted">${date} 該時段目前額滿</p>
       <div class="banner ok" style="margin-top:10px">有人取消、車位釋出時,我們會用 LINE 通知你,先搶先贏 🍓</div>
       <p class="note">提醒:從 LINE 進來預約才收得到候補通知;若用一般瀏覽器加入,請自行留意或回來查看。</p>
-      <button class="primary" onclick="location.reload()">回預約首頁</button>
+      <button class="primary" id="reloadBtn">回預約首頁</button>
     </div>`;
 }
 
-document.addEventListener('click', (e) => { if (e.target.id === 'submitBtn') submit(); });
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'submitBtn') submit();
+  if (e.target.id === 'reloadBtn') location.reload();
+});
 init();

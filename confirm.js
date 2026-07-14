@@ -14,7 +14,7 @@ async function run() {
       <p class="muted">${b.date}(星期${b.weekday})${b.hourLabel}</p>
       <div class="banner ok" style="margin-top:10px">謝謝您的確認 🍓 期待您的到來!</div>
       <p class="note">⏰ 提醒:車位保留至預約時段開始後 10 分鐘,請準時抵達。</p>
-      <a class="primary" style="display:block;text-align:center;text-decoration:none;background:#fff;color:var(--berry);border:1.5px solid var(--berry)" href="cancel.html?token=${token}">需要改期 / 取消?</a>
+      <a class="primary" style="display:block;text-align:center;text-decoration:none;background:#fff;color:var(--berry);border:1.5px solid var(--berry)" href="cancel.html?token=${encodeURIComponent(token)}">需要改期 / 取消?</a>
     </div>`;
 }
 

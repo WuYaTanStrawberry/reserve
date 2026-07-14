@@ -144,8 +144,8 @@ async function loadFeedbackAdmin() {
   $('feedbackList').innerHTML = list.map((f) => {
     const stars = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
     return `<div class="fb-row">
-      <div class="fb-stars">${stars} <span class="fb-meta">${f.name}${f.hasLine ? ' 📱' : ''}・${f.date}(星期${f.weekday})・<a href="tel:${f.phone}">${f.phone}</a></span></div>
-      ${f.comment ? `<div class="fb-comment">${f.comment.replace(/</g, '&lt;')}</div>` : '<div class="fb-comment muted">(未留言)</div>'}
+      <div class="fb-stars">${stars} <span class="fb-meta">${esc(f.name)}${f.hasLine ? ' 📱' : ''}・${f.date}(星期${f.weekday})・<a href="tel:${esc(f.phone)}">${esc(f.phone)}</a></span></div>
+      ${f.comment ? `<div class="fb-comment">${esc(f.comment)}</div>` : '<div class="fb-comment muted">(未留言)</div>'}
       <button class="btn-sm danger" data-fb="${f.id}" style="margin-top:6px">刪除</button>
     </div>`;
   }).join('');
@@ -167,7 +167,7 @@ async function loadWaitlistAdmin() {
     html += `<tr>
       <td>${w.date}<br><span class="muted">星期${w.weekday}</span></td>
       <td>${w.hourLabel}</td>
-      <td>${w.name}${w.hasLine ? ' 📱' : ''}</td>
+      <td>${esc(w.name)}${w.hasLine ? ' 📱' : ''}</td>
       <td><a href="tel:${w.phone}">${w.phone}</a></td>
       <td>${w.cars}</td>
       <td><button class="btn-sm danger" data-wd="${w.id}">移除</button></td>
@@ -198,8 +198,8 @@ function renderBookings(list) {
     const visits = b.visits > 0 ? ` <span class="visits" title="已報到次數">🔁${b.visits}</span>` : '';
     html += `<tr class="${done ? 'checkedin' : ''}">
       <td>${b.date}<br><span class="muted">星期${b.weekday}</span></td>
-      <td>${b.hourLabel}${b.arrival ? `<br><span class="muted">預計 ${b.arrival}</span>` : ''}</td>
-      <td>${b.name}${line}${conf}${visits}${b.note ? ' 📝' : ''}
+      <td>${b.hourLabel}${b.arrival ? `<br><span class="muted">預計 ${esc(b.arrival)}</span>` : ''}</td>
+      <td>${esc(b.name)}${line}${conf}${visits}${b.note ? ' 📝' : ''}
         <div class="ctags">${tagChips}<button class="btn-xs editc" data-phone="${esc(b.phone)}" data-name="${esc(b.name)}" data-tags="${esc(b.tags)}" data-note="${esc(b.note)}">✎ 標籤</button></div>
       </td>
       <td><a href="tel:${b.phone}">${b.phone}</a></td>
@@ -282,7 +282,7 @@ async function genAudience() {
     <div class="banner ok">可推播名單:${data.count} 人(此範圍已報到共 ${data.checkedinTotal} 筆)</div>
     <button class="primary" id="audDl">⬇️ 下載 userId.txt</button>
     <p class="note">下載後到 LINE 官方帳號後台 →「受眾」→ 新增受眾 →「用戶 ID 上傳」上傳這個檔即可。注意:LINE 規定受眾需累積到一定人數才能群發。</p>
-    <textarea readonly style="width:100%;height:120px;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:10px">${txt}</textarea>`;
+    <textarea readonly style="width:100%;height:120px;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:10px">${esc(txt)}</textarea>`;
   $('audDl').addEventListener('click', () => downloadText('audience_checkedin.txt', txt));
 }
 

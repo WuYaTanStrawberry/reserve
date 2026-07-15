@@ -145,14 +145,15 @@ async function submit() {
   if (!name) { banner($('formBanner'), 'err', '請填寫姓名'); return; }
   if (!phone) { banner($('formBanner'), 'err', '請填寫電話'); return; }
 
+  const hp = $('hp_field') ? $('hp_field').value : '';
   $('submitBtn').disabled = true;
   if (mode === 'waitlist') {
-    const { ok, data } = await gasPost({ action: 'joinWaitlist', name, phone, date, hour: selectedHour, cars, lineUserId });
+    const { ok, data } = await gasPost({ action: 'joinWaitlist', name, phone, date, hour: selectedHour, cars, lineUserId, hp });
     $('submitBtn').disabled = false;
     if (!ok) { banner($('formBanner'), 'err', data.error || '加入候補失敗'); return; }
     showWaitlistSuccess(date);
   } else {
-    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId });
+    const { ok, data } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId, hp });
     $('submitBtn').disabled = false;
     if (!ok) { banner($('formBanner'), 'err', data.error || '預約失敗,請稍後再試'); sessionStorage.removeItem('av:' + date); loadDay(); return; }
     showSuccess(data.booking);

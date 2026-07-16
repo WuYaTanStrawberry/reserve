@@ -44,12 +44,13 @@ async function submit() {
 
 function thanks() {
   if (rating >= 3) {
+    const link = safeUrl(reviewUrl); // 只允許 http/https,並在放進 href 前轉義
     box.innerHTML = `
       <div class="success-box">
         <div class="big">🌟</div>
         <h2>謝謝您的肯定!</h2>
         <p class="muted">您的鼓勵是我們最大的動力 🍓</p>
-        ${reviewUrl ? `<a class="primary" style="display:block;text-align:center;text-decoration:none" href="${reviewUrl}" target="_blank" rel="noopener">順手到 Google 給我們一顆星 ⭐</a>` : ''}
+        ${link ? `<a class="primary" style="display:block;text-align:center;text-decoration:none" href="${escHtml(link)}" target="_blank" rel="noopener">順手到 Google 給我們一顆星 ⭐</a>` : ''}
       </div>`;
   } else {
     box.innerHTML = `

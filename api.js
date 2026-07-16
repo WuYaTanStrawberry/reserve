@@ -19,6 +19,12 @@ function hideLoading() { _pending = Math.max(0, _pending - 1); if (_pending === 
 
 // 將任何字串視為純文字顯示(HTML 轉義,防 XSS)——所有頁面共用
 function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+// 網址白名單:只放行 http/https,擋掉 javascript:、data: 等危險 scheme(放進 href 前務必用這個)
+function safeUrl(u) {
+  const s = String(u == null ? '' : u).trim();
+  try { const p = new URL(s).protocol; if (p === 'http:' || p === 'https:') return s; } catch (e) {}
+  return '';
+}
 
 // opts.silent = true 時不顯示轉圈遮罩(供背景更新使用)
 async function gasGet(params, opts) {

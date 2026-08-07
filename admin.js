@@ -1,5 +1,11 @@
-// 後台(GitHub Pages 版,呼叫 Apps Script)
+// 後台(GitHub Pages 版,呼叫 Cloudflare Worker)
+// 防點擊劫持:後台不允許被別的網站嵌在 iframe 裡(meta CSP 沒辦法設 frame-ancestors)
+if (window.top !== window.self) {
+  document.documentElement.textContent = '此頁面不允許被嵌入其他網站。';
+  throw new Error('framed');
+}
 const $ = (id) => document.getElementById(id);
+// 存的是「登入憑證」不是密碼:就算手機被別人拿去看,也拿不到你的密碼,而且可以隨時登出作廢
 let KEY = localStorage.getItem('adminKey') || '';
 let uiReady = false;
 let currentBookings = [];   // 目前畫面上的名單(供樂觀更新用)
@@ -12,10 +18,11 @@ async function adminPost(action, extra, opts) { return gasPost(Object.assign({ a
 
 // ---- 登入 / 進入 ----
 async function login() {
-  KEY = $('pw').value;
+  KEY = $('pw').value;                       // 密碼只在這一刻用一次,換到憑證後就丟掉
   banner($('loginBanner'), 'info', '登入中…');
   const r = await enterApp();
-  if (r.ok) { localStorage.setItem('adminKey', KEY); banner($('loginBanner'), '', ''); }
+  $('pw').value = '';
+  if (r.ok) banner($('loginBanner'), '', '');
   else { KEY = ''; banner($('loginBanner'), 'err', r.error || '密碼錯誤'); $('pw').focus(); }
 }
 function renderInit(data) {
@@ -42,6 +49,9 @@ async function enterApp() {
     }
     return { ok: false, error: data.error };
   }
+  // 後端發了憑證就改用憑證,密碼不會被寫進瀏覽器
+  if (data.sessionToken) { KEY = data.sessionToken; localStorage.setItem('adminKey', KEY); }
+  delete data.sessionToken;
   localStorage.setItem('adminInitCache', JSON.stringify(data));
   renderInit(data);
   return { ok: true };
@@ -226,7 +236,7 @@ async function loadWaitlistAdmin() {
     if (marker.parentNode) marker.parentNode.insertBefore(row, marker);
     marker.remove();
     row.insertAdjacentHTML('beforeend',
-      `<p class="banner err" style="grid-column:1/-1">移除失敗:${esc(netMsg(resD) || data.error || '後端沒有回應成功')}</p>`);
+      `<p class="banner err" style="grid-column:1/-1">移除失敗:${esc(netMsg(resW) || data.error || '後端沒有回應成功')}</p>`);
   }));
 }
 
@@ -457,6 +467,8 @@ function applyConfig(data) {
   $('lineLiff').value = data.line.liffId || '';
   $('lineOwner').value = data.line.ownerUserId || '';
   $('lineToken').placeholder = data.line.hasToken ? '已設定(留空表示不變更)' : '留空表示不變更';
+  $('lineSecret').placeholder = data.line.hasChannelSecret ? '已設定(留空表示不變更)' : '留空表示不變更';
+  $('secretWarn').hidden = !!data.line.hasChannelSecret;
   buildNewBookingForm(data);
 }
 async function loadConfig() {
@@ -474,9 +486,13 @@ async function saveConfig() {
   if (np) body.newPassword = np;
   const { ok, data } = await adminPost('setConfig', body, { msg: '儲存中…' });
   if (ok) {
-    if (np) { KEY = np; localStorage.setItem('adminKey', KEY); $('cfgPw').value = ''; }
-    banner($('cfgBanner'), 'ok', '已儲存 ✅'); loadConfig();
-    setTimeout(() => banner($('cfgBanner'), '', ''), 2500);
+    // 改密碼會把所有裝置踢出去,後端順手發新憑證給「這一台」
+    if (np) {
+      $('cfgPw').value = '';
+      if (data.sessionToken) { KEY = data.sessionToken; localStorage.setItem('adminKey', KEY); }
+    }
+    banner($('cfgBanner'), 'ok', np ? '已儲存 ✅ 其他裝置需要用新密碼重新登入' : '已儲存 ✅'); loadConfig();
+    setTimeout(() => banner($('cfgBanner'), '', ''), 3500);
   } else banner($('cfgBanner'), 'err', esc(data.error || '儲存失敗'));
 }
 async function saveLine() {
@@ -486,9 +502,11 @@ async function saveLine() {
   };
   const tok = $('lineToken').value.trim();
   if (tok) line.channelAccessToken = tok;
+  const sec = $('lineSecret').value.trim();
+  if (sec) line.channelSecret = sec;
   const { ok, data } = await adminPost('setConfig', { line }, { msg: '儲存中…' });
   if (ok) {
-    $('lineToken').value = '';
+    $('lineToken').value = ''; $('lineSecret').value = '';
     banner($('lineBanner'), 'ok', '已儲存 LINE 設定 ✅'); loadConfig();
     setTimeout(() => banner($('lineBanner'), '', ''), 2500);
   } else banner($('lineBanner'), 'err', esc(data.error || '儲存失敗'));
@@ -517,8 +535,9 @@ $('custSave').addEventListener('click', saveCustomer);
 $('custCancel').addEventListener('click', closeCustomerModal);
 $('custModal').addEventListener('click', (e) => { if (e.target.id === 'custModal') closeCustomerModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('custModal').hidden) closeCustomerModal(); });
-$('logout').addEventListener('click', (e) => {
+$('logout').addEventListener('click', async (e) => {
   e.preventDefault();
+  await adminPost('logout', {}, { silent: true });   // 讓這張憑證在後端立刻失效
   localStorage.removeItem('adminKey'); localStorage.removeItem('adminInitCache');
   location.reload();
 });

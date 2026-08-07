@@ -146,6 +146,9 @@
         <input type="text" id="lineOwner" placeholder="U 開頭一長串">
         <label for="lineToken">Channel access token <span class="hint">(貼上後儲存;為安全不會再顯示)</span></label>
         <input type="password" id="lineToken" placeholder="留空表示不變更" autocomplete="off">
+        <label for="lineSecret">Channel secret <span class="hint">(同一頁的 Basic settings 裡;填了才能擋掉偽造的 LINE 事件)</span></label>
+        <input type="password" id="lineSecret" placeholder="留空表示不變更" autocomplete="off">
+        <p class="banner warn" id="secretWarn" hidden>⚠️ 尚未填入 Channel secret,目前任何人都能對系統送假的 LINE 事件。建議補上。</p>
         <div id="lineBanner" role="alert" aria-live="assertive"></div>
         <button class="primary" id="saveLine" type="button">儲存 LINE 設定</button>
 

@@ -112,7 +112,7 @@ function thanks() {
   if (rating >= 3) {
     stateBox('🌟', '謝謝你的鼓勵!', '你的肯定是我們最大的動力 🍓',
       reviewUrl
-        ? `<a class="primary" href="${escHtml(reviewUrl)}" target="_blank" rel="noopener">順手幫我們在 Google 留個評論 ⭐</a>
+        ? `<a class="primary" href="${escHtml(reviewUrl)}" target="_blank" rel="noopener noreferrer">順手幫我們在 Google 留個評論 ⭐</a>
            <p class="note">只要 10 秒,會幫助更多人找到我們,真的非常感謝 🙏</p>`
         : '');
   } else {

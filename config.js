@@ -1,4 +1,5 @@
-// ⬇️ 把這裡換成你部署 Apps Script 後得到的「網頁應用程式」/exec 網址
+// 後端 API 位址(Cloudflare Worker)
+// 舊的 Google Apps Script 版:https://script.google.com/macros/s/AKfycbyFta05.../exec(已退役備用)
 window.APP_CONFIG = {
-  apiBase: 'https://script.google.com/macros/s/AKfycbyFta05usmHSSMQxRFRCYCXmIG8YF8UNc9J8xvhU_0IKR0pkzOl3JW2yoZkSItcjrPN/exec',
+  apiBase: 'https://strawberry-booking.wuyatan.workers.dev',
 };

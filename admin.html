@@ -2,11 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://script.google.com https://*.googleusercontent.com; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://strawberry-booking.wuyatan.workers.dev; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>🍓 舞夜天高架草莓園 後台</title>
-  <link rel="preconnect" href="https://script.google.com" crossorigin>
-  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://strawberry-booking.wuyatan.workers.dev" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <meta name="theme-color" content="#e23b5a">
   <link rel="icon" href="icon.png">
@@ -16,49 +15,59 @@
   <meta name="apple-mobile-web-app-title" content="草莓園後台">
 </head>
 <body>
-  <header class="top"><h1>🍓 舞夜天高架草莓園</h1><p>園主後台</p></header>
-  <div class="wrap">
+  <header class="top">
+    <img class="brand-mark" src="logo-sm.png" alt="" width="60" height="45" style="width:60px">
+    <h1>園主後台</h1>
+  </header>
+
+  <main class="wrap">
     <div class="card" id="loginCard">
-      <label for="pw">管理密碼</label>
-      <input type="password" id="pw" placeholder="請輸入後台密碼">
-      <div id="loginBanner"></div>
-      <button class="primary" id="loginBtn">登入</button>
+      <h2 style="margin-top:0">歡迎回來 🍓</h2>
+      <form id="loginForm">
+        <label for="pw">管理密碼</label>
+        <input type="password" id="pw" name="password" placeholder="請輸入後台密碼"
+               autocomplete="current-password" enterkeyhint="go">
+        <div id="loginBanner" role="alert" aria-live="assertive"></div>
+        <button class="primary" id="loginBtn" type="submit">登入</button>
+      </form>
     </div>
 
-    <div id="app" style="display:none">
-      <div class="tabs">
-        <button data-tab="bookings" class="active">📋 預約名單</button>
-        <button data-tab="newbooking">➕ 新增預約</button>
-        <button data-tab="waitlist">📥 候補名單</button>
-        <button data-tab="feedback">💬 顧客回饋</button>
-        <button data-tab="weeks">📅 開放週次</button>
-        <button data-tab="audience">🎯 受眾匯出</button>
-        <button data-tab="settings">⚙️ 設定</button>
-      </div>
+    <div id="app" hidden>
+      <nav class="tabs" aria-label="後台分頁">
+        <button data-tab="bookings" class="active" type="button"><span class="ti" aria-hidden="true">📋</span>預約名單</button>
+        <button data-tab="newbooking" type="button"><span class="ti" aria-hidden="true">➕</span>新增預約</button>
+        <button data-tab="waitlist" type="button"><span class="ti" aria-hidden="true">📥</span>候補名單</button>
+        <button data-tab="feedback" type="button"><span class="ti" aria-hidden="true">💬</span>顧客回饋</button>
+        <button data-tab="weeks" type="button"><span class="ti" aria-hidden="true">📅</span>開放週次</button>
+        <button data-tab="audience" type="button"><span class="ti" aria-hidden="true">🎯</span>受眾匯出</button>
+        <button data-tab="settings" type="button"><span class="ti" aria-hidden="true">⚙️</span>設定</button>
+      </nav>
 
       <div class="card tab" id="tab-bookings">
         <div class="statcards" id="todayStats"></div>
         <div id="tomorrowStat"></div>
         <div class="toolbar">
-          <label style="margin:0">篩選日期</label>
-          <input type="date" id="filterDate" style="width:auto">
-          <button class="btn-sm" id="clearFilter">顯示全部</button>
-          <span class="stat" id="bookingStat"></span>
+          <label for="filterDate" style="margin:0">日期</label>
+          <input type="date" id="filterDate">
+          <button class="btn-sm" id="todayBtn" type="button">今天</button>
+          <button class="btn-sm" id="clearFilter" type="button">全部</button>
+          <button class="btn-sm" id="refreshBtn" type="button" aria-label="重新整理">↻</button>
         </div>
-        <div id="bookingList"></div>
+        <p class="stat" id="bookingStat"></p>
+        <div id="bookingList" aria-live="polite"></div>
       </div>
 
-      <div class="card tab" id="tab-newbooking" style="display:none">
-        <p class="muted" style="margin-top:0">電話 / 現場預約由你直接登記。不受「開放週次、公休日」限制,但仍會檢查車位是否足夠。若已設定 LINE 與你的 userId,新增後會推一則確認到你自己的 LINE。</p>
+      <div class="card tab" id="tab-newbooking" hidden>
+        <p class="tab-intro">電話 / 現場預約由你直接登記。不受「開放週次、公休日」限制,但仍會檢查車位是否足夠。</p>
         <label for="nbDate">日期</label>
         <input type="date" id="nbDate">
-        <div id="nbAvail"></div>
+        <div id="nbAvail" role="status" aria-live="polite"></div>
         <div id="nbHourWrap">
-          <label for="nbHour">時段(括號內為剩餘車位)</label>
+          <label for="nbHour">時段 <span class="hint">(括號內為剩餘車位)</span></label>
           <select id="nbHour"></select>
         </div>
-        <label>車輛種類</label>
-        <div class="veh">
+        <span class="label" id="nbVehLabel">車輛種類</span>
+        <div class="veh" role="radiogroup" aria-labelledby="nbVehLabel">
           <label><input type="radio" name="nbVehicle" value="car" checked><span>🚗 汽車</span></label>
           <label><input type="radio" name="nbVehicle" value="motor"><span>🏍️ 機車</span></label>
         </div>
@@ -67,105 +76,107 @@
           <select id="nbCars"></select>
         </div>
         <label for="nbName">姓名</label>
-        <input type="text" id="nbName" maxlength="30" placeholder="客人姓名">
+        <input type="text" id="nbName" maxlength="30" placeholder="客人姓名" autocomplete="off">
         <label for="nbPhone">電話</label>
-        <input type="tel" id="nbPhone" maxlength="20" placeholder="例:0912345678">
-        <div id="nbBanner"></div>
-        <button class="primary" id="nbSubmit">新增預約</button>
+        <input type="tel" id="nbPhone" maxlength="20" placeholder="例:0912345678" inputmode="numeric" autocomplete="off">
+        <div id="nbBanner" role="alert" aria-live="assertive"></div>
+        <button class="primary" id="nbSubmit" type="button">新增預約</button>
       </div>
 
-      <div class="card tab" id="tab-waitlist" style="display:none">
-        <p class="muted" style="margin-top:0">時段額滿時客人可加入候補。有人取消、車位釋出時,系統會自動用 LINE 通知排在前面、且車位數夠的候補者(僅限從 LINE 預約者)。</p>
-        <div id="waitlistList"></div>
+      <div class="card tab" id="tab-waitlist" hidden>
+        <p class="tab-intro">時段額滿時客人可加入候補。有人取消、車位釋出時,系統會自動用 LINE 通知排在前面、車位數也夠的候補者(僅限從 LINE 預約者)。</p>
+        <div id="waitlistList" aria-live="polite"></div>
       </div>
 
-      <div class="card tab" id="tab-feedback" style="display:none">
-        <p class="muted" style="margin-top:0">來訪客人會收到 LINE 回饋邀請 → 先在這裡留評分/留言。滿意者會被引導去 Google;不滿意者你能在這裡先看到、私下處理。</p>
-        <div id="feedbackStat" class="stat" style="margin-bottom:8px"></div>
-        <div id="feedbackList"></div>
+      <div class="card tab" id="tab-feedback" hidden>
+        <p class="tab-intro">來訪客人會收到 LINE 回饋邀請。滿意者會被引導去 Google;<b>不滿意者只會出現在這裡</b>,可以私下處理。</p>
+        <p class="stat" id="feedbackStat"></p>
+        <div id="feedbackList" aria-live="polite"></div>
       </div>
 
-      <div class="card tab" id="tab-weeks" style="display:none">
-        <p class="muted" style="margin-top:0">開啟開關後,該週客人才能預約。預設為關閉。</p>
+      <div class="card tab" id="tab-weeks" hidden>
+        <p class="tab-intro">開啟開關後,該週客人才能預約。預設為關閉。</p>
         <div id="weekList"></div>
       </div>
 
-      <div class="card tab" id="tab-audience" style="display:none">
-        <p class="muted" style="margin-top:0">把「已報到」且「從 LINE 預約」的客人整理成名單,下載後到 LINE 官方帳號後台 →「受眾」→「用戶 ID 上傳」建立受眾,即可用 LINE 內建群發做精準推播(發優惠、回流提醒等)。電話/現場登記的客人沒有 LINE 身分,不會在名單內。</p>
-        <div class="toolbar">
-          <label style="margin:0">期間</label>
-          <input type="date" id="audFrom" style="width:auto">
-          <span>~</span>
-          <input type="date" id="audTo" style="width:auto">
-          <input type="text" id="audTag" placeholder="標籤(選填,如 VIP)" style="width:auto">
-          <button class="btn-sm" id="audGen">產生名單</button>
-        </div>
-        <div id="audResult"></div>
+      <div class="card tab" id="tab-audience" hidden>
+        <p class="tab-intro">把「已報到」且「從 LINE 預約」的客人整理成名單,下載後到 LINE 官方帳號後台 →「受眾」→「用戶 ID 上傳」建立受眾,即可做精準群發。電話/現場登記的客人沒有 LINE 身分,不會在名單內。</p>
+        <label for="audFrom">起始日期 <span class="hint">(留空=不限)</span></label>
+        <input type="date" id="audFrom">
+        <label for="audTo">結束日期 <span class="hint">(留空=不限)</span></label>
+        <input type="date" id="audTo">
+        <label for="audTag">只匯出這個標籤 <span class="hint">(留空=全部)</span></label>
+        <input type="text" id="audTag" placeholder="例:VIP">
+        <button class="primary secondary" id="audGen" type="button">產生名單</button>
+        <div id="audResult" aria-live="polite"></div>
       </div>
 
-      <div class="card tab" id="tab-settings" style="display:none">
-        <label>每時段汽車車位數(實體 11,建議設 9 留周轉)</label>
+      <div class="card tab" id="tab-settings" hidden>
+        <h3 style="margin-top:0">營業設定</h3>
+        <label for="cfgCapacity">每時段汽車車位數 <span class="hint">(實體 11,建議設 9 留周轉)</span></label>
         <input type="text" id="cfgCapacity" inputmode="numeric">
-        <label>開放起始時間(整點,0-23)</label>
+        <label for="cfgOpen">開放起始時間 <span class="hint">(整點,0-23)</span></label>
         <input type="text" id="cfgOpen" inputmode="numeric">
-        <label>開放結束時間(整點,1-24)</label>
+        <label for="cfgClose">開放結束時間 <span class="hint">(整點,1-24)</span></label>
         <input type="text" id="cfgClose" inputmode="numeric">
-        <label>固定公休日(打勾者不開放)</label>
+        <span class="label">固定公休日 <span class="hint">(打勾者不開放)</span></span>
         <div class="weekdays" id="cfgClosed"></div>
-        <label>連假/視同假日的日期(這些天改用「一小時制」,每行一個 YYYY-MM-DD)</label>
+        <label for="cfgHolidays">連假 / 視同假日的日期 <span class="hint">(這些天改用一小時制,每行一個 YYYY-MM-DD)</span></label>
         <textarea id="cfgHolidays" rows="3" placeholder="2026-01-01&#10;2026-02-28"></textarea>
-        <label>前一天提醒發送時間(整點,18=晚上六點)</label>
+        <label for="cfgReminder">前一天提醒發送時間 <span class="hint">(整點,18=晚上六點)</span></label>
         <input type="text" id="cfgReminder" inputmode="numeric">
-        <label>Google 評論連結(填了才會在客人來訪後自動邀請評價)</label>
-        <input type="text" id="cfgReviewUrl" placeholder="https://g.page/r/...(留空=不發評價邀請)">
-        <label>變更後台密碼(留空表示不變更)</label>
-        <input type="password" id="cfgPw" placeholder="新密碼">
-        <div id="cfgBanner"></div>
-        <button class="primary" id="saveCfg">儲存設定</button>
+        <label for="cfgReviewUrl">Google 評論連結 <span class="hint">(填了才會在客人來訪後邀請評價)</span></label>
+        <input type="text" id="cfgReviewUrl" placeholder="https://g.page/r/...">
+        <label for="cfgPw">變更後台密碼 <span class="hint">(留空表示不變更)</span></label>
+        <input type="password" id="cfgPw" placeholder="新密碼" autocomplete="new-password">
+        <div id="cfgBanner" role="alert" aria-live="assertive"></div>
+        <button class="primary" id="saveCfg" type="button">儲存營業設定</button>
 
-        <hr style="margin:22px 0;border:none;border-top:1px solid var(--line)">
-        <h3 style="margin:0 0 4px">📱 LINE 官方帳號連動</h3>
-        <p class="note">填入金鑰後,預約成功會通知客人、前一天會自動提醒。</p>
-        <label><input type="checkbox" id="lineEnabled"> 啟用 LINE 推播</label>
-        <label>對外網址 publicBaseUrl(你的 GitHub Pages 網址)</label>
+        <hr class="sep">
+        <h3>📱 LINE 官方帳號連動</h3>
+        <p class="tab-intro">填入金鑰後,預約成功會通知客人、前一天會自動提醒。</p>
+        <label class="wd" style="display:inline-flex;width:auto;margin-bottom:8px">
+          <input type="checkbox" id="lineEnabled"> 啟用 LINE 推播
+        </label>
+        <label for="lineUrl">對外網址 <span class="hint">(你的 GitHub Pages 網址)</span></label>
         <input type="text" id="lineUrl" placeholder="https://你的帳號.github.io/repo">
-        <label>LIFF ID</label>
+        <label for="lineLiff">LIFF ID</label>
         <input type="text" id="lineLiff" placeholder="例 1234567890-abcdefgh">
-        <label>我的 LINE userId(手動新增預約的通知收件人)</label>
-        <input type="text" id="lineOwner" placeholder="手動登記時,確認通知會發到這個 LINE">
-        <label>Channel access token(貼上後儲存;為安全不會再顯示)</label>
-        <input type="password" id="lineToken" placeholder="留空表示不變更">
-        <div id="lineBanner"></div>
-        <button class="primary" id="saveLine">儲存 LINE 設定</button>
+        <label for="lineOwner">我的 LINE userId <span class="hint">(手動新增預約的通知收件人)</span></label>
+        <input type="text" id="lineOwner" placeholder="U 開頭一長串">
+        <label for="lineToken">Channel access token <span class="hint">(貼上後儲存;為安全不會再顯示)</span></label>
+        <input type="password" id="lineToken" placeholder="留空表示不變更" autocomplete="off">
+        <div id="lineBanner" role="alert" aria-live="assertive"></div>
+        <button class="primary" id="saveLine" type="button">儲存 LINE 設定</button>
 
-        <hr style="margin:22px 0;border:none;border-top:1px dashed var(--line)">
-        <h4 style="margin:0 0 4px">🧪 測試推播(確認金鑰有效)</h4>
-        <p class="note">先儲存上面的 token,再填你自己的 LINE userId(LINE Developers 該 channel 的 Basic settings 最下方「Your user ID」),按下後你的 LINE 會收到測試訊息。</p>
-        <label>你的 LINE userId</label>
-        <input type="text" id="testUid" placeholder="例 Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-        <div id="testBanner"></div>
-        <button class="primary" id="testLine" style="background:#fff;color:var(--berry);border:1.5px solid var(--berry)">發送測試訊息給我</button>
+        <hr class="sep">
+        <h4>🧪 測試推播</h4>
+        <p class="tab-intro">先儲存上面的 token,再填你自己的 LINE userId(LINE Developers 該 channel 的 Basic settings 最下方「Your user ID」)。</p>
+        <label for="testUid">你的 LINE userId</label>
+        <input type="text" id="testUid" placeholder="例 Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        <div id="testBanner" role="status" aria-live="polite"></div>
+        <button class="primary secondary" id="testLine" type="button">發送測試訊息給我</button>
       </div>
 
-      <div class="foot-link"><a href="#" id="logout">登出</a></div>
+      <p class="foot-link"><a href="#" id="logout">登出</a></p>
 
-      <div id="custModal" class="modal" style="display:none">
+      <div id="custModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="custTitle">
         <div class="modal-box">
-          <h3 style="margin-top:0">顧客標籤 / 備註</h3>
-          <div class="muted" id="custWho"></div>
-          <label>標籤(逗號分隔,例:VIP, 常客, 注意)</label>
-          <input type="text" id="custTags" placeholder="VIP, 常客">
-          <label>備註(只有你看得到)</label>
+          <h3 id="custTitle" style="margin-top:0">顧客標籤 / 備註</h3>
+          <p class="stat" id="custWho" style="margin:0"></p>
+          <label for="custTags">標籤 <span class="hint">(逗號分隔)</span></label>
+          <input type="text" id="custTags" placeholder="VIP, 常客, 注意">
+          <label for="custNote">備註 <span class="hint">(只有你看得到)</span></label>
           <textarea id="custNote" rows="3" placeholder="例:喜歡大湖香水草莓、上次客訴已處理"></textarea>
-          <div id="custBanner"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="primary" id="custSave" style="flex:1;margin-top:0">儲存</button>
-            <button class="btn-sm" id="custCancel">取消</button>
+          <div id="custBanner" role="alert" aria-live="assertive"></div>
+          <div style="display:flex;gap:8px;margin-top:16px">
+            <button class="btn-sm" id="custCancel" type="button" style="flex:0 0 auto">取消</button>
+            <button class="primary" id="custSave" type="button" style="flex:1;margin-top:0">儲存</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <script src="config.js"></script>
   <script src="api.js"></script>

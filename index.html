@@ -2,56 +2,79 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.line-scdn.net https://*.line-scdn.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.line-scdn.net; connect-src 'self' https://script.google.com https://*.googleusercontent.com https://*.line.me https://*.line-scdn.net; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.line-scdn.net https://*.line-scdn.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.line-scdn.net; connect-src 'self' https://strawberry-booking.wuyatan.workers.dev https://*.line.me https://*.line-scdn.net; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>🍓 舞夜天高架草莓園｜停車預約</title>
-  <link rel="preconnect" href="https://script.google.com" crossorigin>
-  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <meta name="theme-color" content="#fff7f8">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="preconnect" href="https://strawberry-booking.wuyatan.workers.dev" crossorigin>
   <link rel="preconnect" href="https://static.line-scdn.net">
+  <link rel="preload" as="image" href="logo-sm.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="top">
-    <h1>🍓 舞夜天高架草莓園</h1>
+    <img class="brand-mark" src="logo-sm.png" alt="舞夜天高架草莓園" width="76" height="57">
+    <h1>舞夜天高架草莓園</h1>
     <p>停車預約・選好日期,留下姓名電話即可</p>
   </header>
 
-  <div class="wrap">
+  <main class="wrap">
     <div class="card">
-      <div class="banner ok" style="margin-top:0">👨‍👩‍👧‍👦 入園<b>不限人數</b>!因停車場車位有限,採「依車輛」訂位——請照當天開來的<b>車輛數</b>預約即可 🚗</div>
-      <label for="date">選擇日期</label>
-      <input type="date" id="date">
-      <div id="dateBanner"></div>
+      <p class="banner info" style="margin-top:0">👨‍👩‍👧‍👦 入園<b>不限人數</b>!因停車場車位有限,採「依車輛」訂位——請照當天開來的<b>車輛數</b>預約即可 🚗</p>
 
-      <div id="slotSection" style="display:none">
-        <label id="slotLabel">選擇時段(數字為剩餘汽車車位)</label>
-        <div id="slotNote"></div>
-        <div class="slots" id="slots"></div>
-      </div>
+      <form id="bookForm" novalidate>
+        <label for="date">選擇日期</label>
+        <input type="date" id="date" name="date" required>
+        <div id="dateBanner" role="status" aria-live="polite"></div>
 
-      <div id="formSection" style="display:none">
-        <div id="modeNote"></div>
-        <label>車輛種類</label>
-        <div class="veh">
-          <label><input type="radio" name="vehicle" value="car" checked><span>🚗 汽車(佔車位)</span></label>
-          <label><input type="radio" name="vehicle" value="motor"><span>🏍️ 機車(不佔車位)</span></label>
+        <div id="slotSection" hidden>
+          <span class="label" id="slotLabel">選擇時段</span>
+          <div id="slotNote"></div>
+          <div class="slots" id="slots" role="radiogroup" aria-labelledby="slotLabel"></div>
         </div>
-        <div id="carQtyWrap">
-          <label for="carQty">汽車數量(一次幾台車)</label>
-          <select id="carQty"></select>
+
+        <div id="formSection" hidden>
+          <div id="modeNote"></div>
+
+          <span class="label" id="vehLabel">車輛種類</span>
+          <div class="veh" role="radiogroup" aria-labelledby="vehLabel">
+            <label>
+              <input type="radio" name="vehicle" value="car" checked>
+              <span>🚗 汽車<small>佔用車位</small></span>
+            </label>
+            <label>
+              <input type="radio" name="vehicle" value="motor">
+              <span>🏍️ 機車<small>不佔車位</small></span>
+            </label>
+          </div>
+
+          <div id="carQtyWrap">
+            <label for="carQty">開幾台車來?</label>
+            <select id="carQty" name="cars"></select>
+          </div>
+
+          <label for="name">姓名</label>
+          <input type="text" id="name" name="name" placeholder="您的稱呼" maxlength="30"
+                 autocomplete="name" enterkeyhint="next" required>
+
+          <label for="phone">聯絡電話</label>
+          <input type="tel" id="phone" name="phone" placeholder="例:0912345678" maxlength="20"
+                 autocomplete="tel" inputmode="numeric" enterkeyhint="done" required>
+
+          <p class="banner warn">⏰ 車位保留至預約時段開始後 <b>10 分鐘</b>,逾時將先開放給現場客人,敬請準時到達 🙏</p>
+          <div id="formBanner" role="alert" aria-live="assertive"></div>
+
+          <input type="text" id="hp_field" name="nickname" tabindex="-1" autocomplete="off" aria-hidden="true"
+                 class="sr-only">
+          <button class="primary" id="submitBtn" type="submit">送出預約</button>
         </div>
-        <label for="name">姓名</label>
-        <input type="text" id="name" placeholder="您的稱呼" maxlength="30">
-        <label for="phone">聯絡電話</label>
-        <input type="tel" id="phone" placeholder="例:0912345678" maxlength="20">
-        <div class="banner warn" style="margin-top:6px">⏰ 車位保留至預約時段開始後 <b>10 分鐘</b>,逾時將先開放給現場客人,敬請準時到達 🙏</div>
-        <div id="formBanner"></div>
-        <input type="text" id="hp_field" name="nickname" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-        <button class="primary" id="submitBtn">送出預約</button>
-      </div>
+      </form>
     </div>
-    <div class="foot-link"><a href="admin.html" aria-label="管理" style="font-size:.7rem;color:#ecdce0;text-decoration:none">·</a></div>
-  </div>
+
+    <p class="foot-link"><a href="admin.html" aria-label="管理" style="font-size:.7rem;color:#f2e2e6;text-decoration:none">·</a></p>
+  </main>
 
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="config.js"></script>

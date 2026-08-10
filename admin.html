@@ -127,8 +127,10 @@
         <input type="text" id="cfgReminder" inputmode="numeric">
         <label for="cfgReviewUrl">Google 評論連結 <span class="hint">(填了才會在客人來訪後邀請評價)</span></label>
         <input type="text" id="cfgReviewUrl" placeholder="https://g.page/r/...">
-        <label for="cfgPw">變更後台密碼 <span class="hint">(留空表示不變更)</span></label>
+        <label for="cfgPw">變更後台密碼 <span class="hint">(留空表示不變更;至少 8 個字)</span></label>
         <input type="password" id="cfgPw" placeholder="新密碼" autocomplete="new-password">
+        <label for="cfgPwCur">目前密碼 <span class="hint">(只有要改密碼時才需要填)</span></label>
+        <input type="password" id="cfgPwCur" placeholder="請再輸入一次目前的密碼" autocomplete="current-password">
         <div id="cfgBanner" role="alert" aria-live="assertive"></div>
         <button class="primary" id="saveCfg" type="button">儲存營業設定</button>
 

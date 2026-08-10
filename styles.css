@@ -69,6 +69,11 @@
 /* hidden 屬性一律優先於任何 display 設定(否則 .modal 的 display:flex 會蓋掉 hidden) */
 [hidden] { display: none !important; }
 
+/* 多選模式的核取方塊:手指要好按,所以給滿 44px 的觸控範圍 */
+.pickbox { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin: -10px 4px -10px -10px; cursor: pointer; }
+.pickbox input { width: 22px; height: 22px; accent-color: var(--berry); margin: 0; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {

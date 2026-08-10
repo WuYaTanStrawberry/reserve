@@ -38,12 +38,12 @@ function renderInit(data) {
 }
 async function enterApp() {
   let cached = null;
-  try { cached = JSON.parse(localStorage.getItem('adminInitCache') || 'null'); } catch (e) {}
+  try { cached = JSON.parse(sessionStorage.getItem('adminInitCache') || 'null'); } catch (e) {}
   if (cached) renderInit(cached);
   const { ok, data } = await adminPost('adminInit', {}, { silent: !!cached, msg: '載入中…' });
   if (!ok) {
     if (cached) {
-      localStorage.removeItem('adminInitCache');
+      sessionStorage.removeItem('adminInitCache');
       $('app').hidden = true;
       $('loginCard').hidden = false;
     }
@@ -52,7 +52,7 @@ async function enterApp() {
   // 後端發了憑證就改用憑證,密碼不會被寫進瀏覽器
   if (data.sessionToken) { KEY = data.sessionToken; localStorage.setItem('adminKey', KEY); }
   delete data.sessionToken;
-  localStorage.setItem('adminInitCache', JSON.stringify(data));
+  sessionStorage.setItem('adminInitCache', JSON.stringify(data));
   renderInit(data);
   return { ok: true };
 }
@@ -483,12 +483,17 @@ async function saveConfig() {
     closedWeekdays: readClosedWeekdays(),
   };
   const np = $('cfgPw').value.trim();
-  if (np) body.newPassword = np;
+  if (np) {
+    const cur = $('cfgPwCur').value;
+    if (!cur) { banner($('cfgBanner'), 'err', '要變更密碼,請先在「目前密碼」欄填入現在的密碼'); $('cfgPwCur').focus(); return; }
+    body.newPassword = np;
+    body.currentPassword = cur;
+  }
   const { ok, data } = await adminPost('setConfig', body, { msg: '儲存中…' });
   if (ok) {
     // 改密碼會把所有裝置踢出去,後端順手發新憑證給「這一台」
     if (np) {
-      $('cfgPw').value = '';
+      $('cfgPw').value = ''; $('cfgPwCur').value = '';
       if (data.sessionToken) { KEY = data.sessionToken; localStorage.setItem('adminKey', KEY); }
     }
     banner($('cfgBanner'), 'ok', np ? '已儲存 ✅ 其他裝置需要用新密碼重新登入' : '已儲存 ✅'); loadConfig();
@@ -538,7 +543,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('cust
 $('logout').addEventListener('click', async (e) => {
   e.preventDefault();
   await adminPost('logout', {}, { silent: true });   // 讓這張憑證在後端立刻失效
-  localStorage.removeItem('adminKey'); localStorage.removeItem('adminInitCache');
+  localStorage.removeItem('adminKey'); sessionStorage.removeItem('adminInitCache');
   location.reload();
 });
 

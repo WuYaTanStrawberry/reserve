@@ -107,6 +107,7 @@ function bookingRow(b) {
   return `
   <div class="brow${done ? ' is-checkedin' : ''}" data-id="${esc(b.id)}">
     <div class="b-name">
+      ${pickMode ? `<label class="pickbox"><input type="checkbox" data-pick="${esc(b.id)}"><span class="sr-only">選取 ${esc(b.name)} 的預約</span></label>` : ''}
       ${esc(b.name)}
       ${b.hasLine ? '<span class="visits" title="從 LINE 預約">📱</span>' : ''}
       ${b.confirmed ? '<span class="tag done">已回覆會到</span>' : ''}
@@ -141,6 +142,76 @@ function bindRowActions() {
     openCustomerModal(btn.dataset.phone, btn.dataset.name, btn.dataset.tags, btn.dataset.note)));
   document.querySelectorAll('[data-ci]').forEach((btn) => btn.addEventListener('click', () => toggleCheckin(btn)));
   document.querySelectorAll('[data-del]').forEach((btn) => btn.addEventListener('click', () => removeBooking(btn)));
+  document.querySelectorAll('[data-pick]').forEach((cb) => cb.addEventListener('change', renderBulkBar));
+}
+
+// ---- 多選 + 批次取消(被灌假預約時一筆一筆按不完) ----
+let pickMode = false;
+const pickedIds = () => Array.from(document.querySelectorAll('[data-pick]:checked')).map((c) => c.dataset.pick);
+function togglePickMode() {
+  pickMode = !pickMode;
+  $('pickBtn').textContent = pickMode ? '✕ 結束多選' : '☑️ 多選';
+  $('bulkBar').hidden = !pickMode;
+  renderBookings(currentBookings);
+  renderBulkBar();
+}
+function renderBulkBar() {
+  if (!pickMode) { $('bulkBar').hidden = true; return; }
+  const n = pickedIds().length;
+  $('bulkBar').hidden = false;
+  $('bulkBar').innerHTML = `
+    <div class="banner ${n ? 'warn' : 'info'}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="flex:1;min-width:120px">已選 <b>${n}</b> 筆</span>
+      <button class="btn-sm" id="pickAll" type="button">${n === currentBookings.length && n ? '全部取消選取' : '全選'}</button>
+      <button class="btn-sm danger" id="bulkGo" type="button" ${n ? '' : 'disabled'}>取消選取的 ${n} 筆</button>
+    </div>`;
+  $('pickAll').addEventListener('click', () => {
+    const all = pickedIds().length === currentBookings.length;
+    document.querySelectorAll('[data-pick]').forEach((c) => { c.checked = !all; });
+    renderBulkBar();
+  });
+  if (n) $('bulkGo').addEventListener('click', confirmBulkCancel);
+}
+function confirmBulkCancel() {
+  const ids = pickedIds();
+  $('bulkBar').innerHTML = `
+    <div class="banner err" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="flex:1;min-width:150px">確定要取消這 <b>${ids.length}</b> 筆預約嗎?車位會立刻釋出,無法復原。</span>
+      <button class="btn-sm" id="bulkNo" type="button">不要</button>
+      <button class="btn-sm danger" id="bulkYes" type="button">確定取消 ${ids.length} 筆</button>
+    </div>`;
+  $('bulkNo').addEventListener('click', renderBulkBar);
+  $('bulkYes').addEventListener('click', async () => {
+    $('bulkYes').disabled = true;
+    const res = await adminPost('bulkCancel', { ids }, { msg: `取消 ${ids.length} 筆…` });
+    if (!res.ok) {
+      $('bulkBar').innerHTML = `<p class="banner err">取消失敗:${esc(netMsg(res) || res.data.error || '後端沒有回應成功')}</p>`;
+      return;
+    }
+    pickMode = false;
+    $('pickBtn').textContent = '☑️ 多選';
+    await loadBookings();
+    loadWeeks(); loadTodayStats();
+    $('bulkBar').hidden = false;
+    $('bulkBar').innerHTML = `<p class="banner ok">已取消 ${res.data.cancelled} 筆 ✅</p>`;
+    setTimeout(() => { $('bulkBar').hidden = true; }, 4000);
+  });
+}
+
+// ---- 匯出名單 CSV(取代以前打開 Google 試算表看名單的習慣) ----
+async function exportCsv() {
+  const withCancelled = confirm('要一起匯出「已取消」的預約嗎?\n\n按「確定」= 全部都匯出\n按「取消」= 只匯出有效預約');
+  const res = await adminPost('exportCsv', { all: withCancelled }, { msg: '整理名單…' });
+  if (!res.ok) { banner($('bulkBar'), 'err', esc(netMsg(res) || res.data.error || '匯出失敗')); $('bulkBar').hidden = false; return; }
+  const blob = new Blob([res.data.csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `舞夜天草莓園_預約名單_${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  $('bulkBar').hidden = false;
+  $('bulkBar').innerHTML = `<p class="banner ok">已下載 ${res.data.rows} 筆 ✅ 用 Excel 或 Google 試算表打開即可</p>`;
+  setTimeout(() => { $('bulkBar').hidden = true; }, 5000);
 }
 // 報到:先在畫面上立刻反映,再靜默同步(不再全螢幕鎖住)
 async function toggleCheckin(btn) {
@@ -531,6 +602,8 @@ $('filterDate').addEventListener('change', loadBookings);
 $('todayBtn').addEventListener('click', () => { $('filterDate').value = todayStr(); loadBookings(); });
 $('clearFilter').addEventListener('click', () => { $('filterDate').value = ''; loadBookings(); });
 $('refreshBtn').addEventListener('click', () => { loadBookings(); loadTodayStats(); });
+$('exportBtn').addEventListener('click', exportCsv);
+$('pickBtn').addEventListener('click', togglePickMode);
 $('saveCfg').addEventListener('click', saveConfig);
 $('saveLine').addEventListener('click', saveLine);
 $('testLine').addEventListener('click', testLine);

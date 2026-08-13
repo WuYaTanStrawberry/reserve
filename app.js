@@ -37,7 +37,7 @@ function initLiff(liffId) {
 async function init() {
   let cached = null;
   try { cached = JSON.parse(localStorage.getItem('cfgCache') || 'null'); } catch (e) {}
-  if (cached) { capacity = cached.capacity || 9; initLiff(cached.liffId); }
+  if (cached) { capacity = cached.capacity || 9; initLiff(cached.liffId); initTurnstile(cached.turnstileSiteKey); }
 
   const dateEl = $('date');
   const t = new Date();
@@ -57,6 +57,7 @@ async function init() {
     localStorage.setItem('cfgCache', JSON.stringify(config));
     capacity = config.capacity;
     initLiff(config.liffId);
+    initTurnstile(config.turnstileSiteKey);
   }
 }
 
@@ -226,6 +227,35 @@ function selectSlot(el, s) {
   focusInto($('formSection'), { focus: $('name').value ? $('phone') : $('name') });
 }
 
+// ---- Cloudflare Turnstile 人機驗證 ----
+// 後台沒填金鑰時,整段完全不會啟動,畫面上什麼都不會多出來。
+let tsWidgetId = null;
+function initTurnstile(siteKey) {
+  if (!siteKey || tsWidgetId !== null || document.getElementById('tsScript')) return;
+  const box = $('tsBox');
+  if (!box) return;
+  box.hidden = false;
+  const s = document.createElement('script');
+  s.id = 'tsScript';
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  s.async = true; s.defer = true;
+  s.onload = () => {
+    try {
+      tsWidgetId = window.turnstile.render('#tsWidget', { sitekey: siteKey, size: 'flexible' });
+    } catch (e) { box.hidden = true; }      // 渲染失敗就當作沒這回事,不要卡住客人
+  };
+  s.onerror = () => { box.hidden = true; };
+  document.head.appendChild(s);
+}
+function tsToken() {
+  try { return (window.turnstile && tsWidgetId !== null) ? window.turnstile.getResponse(tsWidgetId) || '' : ''; }
+  catch (e) { return ''; }
+}
+// 驗證碼是一次性的,送出後(不論成功失敗)都要重置,否則第二次會被判定重複使用
+function tsReset() {
+  try { if (window.turnstile && tsWidgetId !== null) window.turnstile.reset(tsWidgetId); } catch (e) {}
+}
+
 async function submit() {
   const name = $('name').value.trim();
   const phone = $('phone').value.trim();
@@ -233,6 +263,7 @@ async function submit() {
   const cars = vehicle === 'car' ? Number($('carQty').value || 1) : 0;
   const date = $('date').value;
   const hp = $('hp_field') ? $('hp_field').value : '';
+  const cfToken = tsToken();
 
   if (selectedHour == null) { banner($('formBanner'), 'err', '請先選擇時段'); focusInto($('slotSection')); return; }
   if (!name) { banner($('formBanner'), 'err', '請填寫姓名,我們現場才找得到你'); $('name').focus(); return; }
@@ -243,19 +274,20 @@ async function submit() {
   const msg = mode === 'waitlist' ? '加入候補中…' : '送出預約中…';
 
   if (mode === 'waitlist') {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone, date, hour: selectedHour, cars, lineUserId, hp }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone, date, hour: selectedHour, cars, lineUserId, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       banner($('formBanner'), 'err', offline ? '連不上訂位系統,沒送出去。請確認你的網路後再按一次 🙏'
         : badResponse ? '訂位系統剛才忙線,沒送出去(跟你的網路無關),請再按一次 🙏'
         : escHtml(data.error || '加入候補失敗'));
       focusInto($('formBanner'), { block: 'center' });
+      tsReset();
       return;
     }
     dropCache(date);
     showWaitlistSuccess(date);
   } else {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId, hp }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       // 保留表單與錯誤訊息(不可呼叫 loadDay,那會把整個表單連同訊息一起隱藏)
@@ -263,6 +295,7 @@ async function submit() {
         : badResponse ? '訂位系統剛才忙線,沒送出去(跟你的網路無關),請再按一次 🙏'
         : escHtml(data.error || '預約失敗,請稍後再試'));
       focusInto($('formBanner'), { block: 'center' });
+      tsReset();
       dropCache(date);
       refreshDay(date);          // 背景更新車位數,不動使用者填好的內容
       return;

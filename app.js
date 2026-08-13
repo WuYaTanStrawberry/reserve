@@ -268,13 +268,20 @@ async function submit() {
   if (selectedHour == null) { banner($('formBanner'), 'err', '請先選擇時段'); focusInto($('slotSection')); return; }
   if (!name) { banner($('formBanner'), 'err', '請填寫姓名,我們現場才找得到你'); $('name').focus(); return; }
   if (!phone) { banner($('formBanner'), 'err', '請填寫電話,有狀況我們才聯絡得上'); $('phone').focus(); return; }
+  // 電話打錯一碼就聯絡不到人,所以在送出前先擋;送出的也是去掉符號的純數字
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (!/^0\d{9}$/.test(phoneDigits)) {
+    banner($('formBanner'), 'err', `電話號碼要 <b>10 碼</b>喔(例:0912345678)。你目前輸入了 ${phoneDigits.length} 碼,請再確認一次 🙏`);
+    $('phone').focus(); $('phone').select();
+    return;
+  }
 
   const btn = $('submitBtn');
   btn.disabled = true;
   const msg = mode === 'waitlist' ? '加入候補中…' : '送出預約中…';
 
   if (mode === 'waitlist') {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone, date, hour: selectedHour, cars, lineUserId, hp, cfToken }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone: phoneDigits, date, hour: selectedHour, cars, lineUserId, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       banner($('formBanner'), 'err', offline ? '連不上訂位系統,沒送出去。請確認你的網路後再按一次 🙏'
@@ -287,7 +294,7 @@ async function submit() {
     dropCache(date);
     showWaitlistSuccess(date);
   } else {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone, date, hour: selectedHour, vehicle, cars, lineUserId, hp, cfToken }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone: phoneDigits, date, hour: selectedHour, vehicle, cars, lineUserId, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       // 保留表單與錯誤訊息(不可呼叫 loadDay,那會把整個表單連同訊息一起隱藏)

@@ -540,6 +540,11 @@ function applyConfig(data) {
   $('lineToken').placeholder = data.line.hasToken ? '已設定(留空表示不變更)' : '留空表示不變更';
   $('lineSecret').placeholder = data.line.hasChannelSecret ? '已設定(留空表示不變更)' : '留空表示不變更';
   $('secretWarn').hidden = !!data.line.hasChannelSecret;
+  const tsReady = !!(data.line.turnstileSiteKey && data.line.hasTurnstileSecret);
+  $('tsSite').value = data.line.turnstileSiteKey || '';
+  $('tsSecret').placeholder = data.line.hasTurnstileSecret ? '已設定(留空表示不變更)' : '留空表示不變更';
+  $('tsOn').hidden = !tsReady;
+  $('tsWarn').hidden = tsReady;
   buildNewBookingForm(data);
 }
 async function loadConfig() {
@@ -587,6 +592,26 @@ async function saveLine() {
     setTimeout(() => banner($('lineBanner'), '', ''), 2500);
   } else banner($('lineBanner'), 'err', esc(data.error || '儲存失敗'));
 }
+// ---- 人機驗證 Turnstile ----
+async function saveTurnstile() {
+  const siteKey = $('tsSite').value.trim();
+  const secret = $('tsSecret').value.trim();
+  if (!siteKey) { banner($('tsBanner'), 'err', '請填入網站金鑰 Site Key'); return; }
+  const { ok, data } = await adminPost('setConfig', { turnstile: { siteKey, secret } }, { msg: '儲存中…' });
+  if (!ok) { banner($('tsBanner'), 'err', esc(data.error || '儲存失敗')); return; }
+  $('tsSecret').value = '';
+  banner($('tsBanner'), 'ok', '已儲存 ✅ 請務必從 LINE 實際訂一筆確認');
+  loadConfig();
+  setTimeout(() => banner($('tsBanner'), '', ''), 5000);
+}
+async function clearTurnstile() {
+  const { ok, data } = await adminPost('setConfig', { turnstile: { clear: true } }, { msg: '停用中…' });
+  if (!ok) { banner($('tsBanner'), 'err', esc(data.error || '停用失敗')); return; }
+  $('tsSite').value = ''; $('tsSecret').value = '';
+  banner($('tsBanner'), 'ok', '已停用人機驗證');
+  loadConfig();
+}
+
 async function testLine() {
   const userId = $('testUid').value.trim();
   if (!userId) { banner($('testBanner'), 'err', '請填入你的 LINE userId'); return; }
@@ -607,6 +632,8 @@ $('pickBtn').addEventListener('click', togglePickMode);
 $('saveCfg').addEventListener('click', saveConfig);
 $('saveLine').addEventListener('click', saveLine);
 $('testLine').addEventListener('click', testLine);
+$('saveTs').addEventListener('click', saveTurnstile);
+$('clearTs').addEventListener('click', clearTurnstile);
 $('nbSubmit').addEventListener('click', newBooking);
 $('audGen').addEventListener('click', genAudience);
 $('custSave').addEventListener('click', saveCustomer);

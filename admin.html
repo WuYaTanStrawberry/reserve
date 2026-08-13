@@ -34,7 +34,8 @@
 
     <div id="app" hidden>
       <nav class="tabs" aria-label="後台分頁">
-        <button data-tab="bookings" class="active" type="button"><span class="ti" aria-hidden="true">📋</span>預約名單</button>
+        <button data-tab="calendar" class="active" type="button"><span class="ti" aria-hidden="true">📆</span>週曆</button>
+        <button data-tab="bookings" type="button"><span class="ti" aria-hidden="true">📋</span>預約名單</button>
         <button data-tab="newbooking" type="button"><span class="ti" aria-hidden="true">➕</span>新增預約</button>
         <button data-tab="waitlist" type="button"><span class="ti" aria-hidden="true">📥</span>候補名單</button>
         <button data-tab="feedback" type="button"><span class="ti" aria-hidden="true">💬</span>顧客回饋</button>
@@ -43,7 +44,26 @@
         <button data-tab="settings" type="button"><span class="ti" aria-hidden="true">⚙️</span>設定</button>
       </nav>
 
-      <div class="card tab" id="tab-bookings">
+      <div class="card tab" id="tab-calendar">
+        <div class="cal-nav">
+          <button class="btn-sm" id="calPrev" type="button" aria-label="上一週">‹</button>
+          <div class="cal-range" id="calRange" aria-live="polite">載入中…</div>
+          <button class="btn-sm" id="calNext" type="button" aria-label="下一週">›</button>
+          <button class="btn-sm" id="calToday" type="button">本週</button>
+        </div>
+        <div id="calBanner"></div>
+        <div class="cal-wrap"><div id="calGrid" role="table" aria-label="本週各時段預約狀況"></div></div>
+        <p class="cal-legend">
+          <span><i class="dot lv0"></i>空</span>
+          <span><i class="dot lv1"></i>少</span>
+          <span><i class="dot lv2"></i>快滿</span>
+          <span><i class="dot lv3"></i>已滿</span>
+          <span class="cal-hint">點格子看名單</span>
+        </p>
+        <div id="calDetail" aria-live="polite"></div>
+      </div>
+
+      <div class="card tab" id="tab-bookings" hidden>
         <div class="statcards" id="todayStats"></div>
         <div id="tomorrowStat"></div>
         <div class="toolbar">

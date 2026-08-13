@@ -159,6 +159,22 @@
         <button class="primary" id="saveLine" type="button">儲存 LINE 設定</button>
 
         <hr class="sep">
+        <h3>🛡️ 人機驗證(Cloudflare Turnstile)</h3>
+        <p class="tab-intro">擋掉機器人自動灌假預約。真人幾乎不會被打擾(通常連點都不用點)。
+          到 Cloudflare 後台 →「Turnstile」建立一個小工具,會給你兩把金鑰。<b>兩把都填齊才會啟用</b>;留空就是關閉。</p>
+        <p class="banner warn" id="tsWarn" hidden>⚠️ 尚未啟用。啟用後<b>請務必從 LINE 實際訂一筆測試</b>,確認 LINE 內建瀏覽器也能正常通過驗證。</p>
+        <p class="banner ok" id="tsOn" hidden>✅ 人機驗證已啟用中</p>
+        <label for="tsSite">網站金鑰 Site Key <span class="hint">(公開的,0x 開頭)</span></label>
+        <input type="text" id="tsSite" placeholder="0x4AAAAAAA..." autocomplete="off">
+        <label for="tsSecret">密鑰 Secret Key <span class="hint">(機密,貼上後不會再顯示)</span></label>
+        <input type="password" id="tsSecret" placeholder="留空表示不變更" autocomplete="off">
+        <div id="tsBanner" role="alert" aria-live="assertive"></div>
+        <div style="display:flex;gap:8px">
+          <button class="primary" id="saveTs" type="button" style="flex:1">儲存並啟用</button>
+          <button class="btn-sm danger" id="clearTs" type="button" style="flex:0 0 auto">停用</button>
+        </div>
+
+        <hr class="sep">
         <h4>🧪 測試推播</h4>
         <p class="tab-intro">先儲存上面的 token,再填你自己的 LINE userId(LINE Developers 該 channel 的 Basic settings 最下方「Your user ID」)。</p>
         <label for="testUid">你的 LINE userId</label>

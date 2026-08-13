@@ -35,6 +35,8 @@ function renderInit(data) {
   renderTomorrow(data.tomorrow);
   $('filterDate').value = data.today;
   renderBookings(data.bookings);
+  loadCalendar(null, { silent: true });
+  calAutoRefresh(true);
 }
 async function enterApp() {
   let cached = null;
@@ -94,10 +96,107 @@ document.querySelectorAll('.tabs button').forEach((btn) => {
     document.querySelectorAll('.tab').forEach((t) => (t.hidden = true));
     $('tab-' + btn.dataset.tab).hidden = false;
     window.scrollTo({ top: 0, behavior: 'auto' });
+    if (btn.dataset.tab === 'calendar') { loadCalendar(); calAutoRefresh(true); } else calAutoRefresh(false);
     if (btn.dataset.tab === 'waitlist') loadWaitlistAdmin();
     if (btn.dataset.tab === 'feedback') loadFeedbackAdmin();
   });
 });
+
+// ---- 週曆總覽(取代「客人取消要通知我」:自己一眼看完整週) ----
+let calMonday = null;        // 目前顯示的那一週(週一)
+let calData = null;
+let calTimer = null;
+let calPickedCell = null;
+
+function mondayOfLocal(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const w = d.getDay();
+  d.setDate(d.getDate() + (w === 0 ? -6 : 1 - w));
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function shiftDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  const p = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+const mmdd = (s) => s.slice(5).replace('-', '/');
+
+async function loadCalendar(monday, opts) {
+  calMonday = monday || calMonday || mondayOfLocal(todayStr());
+  const { ok, data } = await adminPost('weekView', { date: calMonday }, opts || { msg: '載入週曆…' });
+  if (!ok) { banner($('calBanner'), 'err', esc(data.error || '載入失敗')); return; }
+  calData = data;
+  renderCalendar(data);
+}
+function renderCalendar(d) {
+  $('calRange').textContent = `${mmdd(d.monday)} – ${mmdd(d.sunday)}`;
+  banner($('calBanner'), d.open ? '' : 'warn', d.open ? '' : '這一週<b>尚未開放</b>客人預約(你仍可從「新增預約」手動登記)');
+
+  // 每格佔用台數
+  const used = {};
+  d.bookings.forEach((b) => {
+    if (b.vehicle !== 'car') return;
+    used[b.date + '|' + b.hour] = (used[b.date + '|' + b.hour] || 0) + (b.cars || 0);
+  });
+  const motos = {};
+  d.bookings.forEach((b) => {
+    if (b.vehicle === 'car') return;
+    motos[b.date + '|' + b.hour] = (motos[b.date + '|' + b.hour] || 0) + 1;
+  });
+
+  const cap = d.capacity || 9;
+  let html = '<div class="cal-row cal-head"><div class="cal-time"></div>'
+    + d.days.map((x) => `<div class="cal-day${x.isToday ? ' is-today' : ''}${x.past ? ' is-past' : ''}">
+        <b>${esc(x.weekday)}</b><span>${mmdd(x.date)}</span></div>`).join('')
+    + '</div>';
+
+  d.hours.forEach((h) => {
+    html += `<div class="cal-row"><div class="cal-time">${String(h).padStart(2, '0')}</div>`;
+    d.days.forEach((x) => {
+      const key = x.date + '|' + h;
+      const n = used[key] || 0;
+      const m = motos[key] || 0;
+      if (x.closed) { html += '<div class="cal-cell is-closed" title="公休">—</div>'; return; }
+      const lv = n <= 0 ? 0 : (n >= cap ? 3 : (n >= cap * 0.7 ? 2 : 1));
+      // 只有機車的時段不佔車位,顯示 0 會被誤讀成「沒人」——留空白讓 🏍 自己說話
+      const label = n >= cap ? '滿' : (n > 0 ? String(n) : (m > 0 ? '' : '·'));
+      html += `<button type="button" class="cal-cell lv${lv}${x.past ? ' is-past' : ''}"
+        data-cell="${esc(key)}" aria-label="${esc(x.date)} ${h}點,汽車 ${n} 台${m ? `,機車 ${m}` : ''}">
+        ${label}${m ? '<i class="moto">🏍</i>' : ''}</button>`;
+    });
+    html += '</div>';
+  });
+  $('calGrid').innerHTML = html;
+  document.querySelectorAll('[data-cell]').forEach((c) =>
+    c.addEventListener('click', () => showCell(c.dataset.cell)));
+  if (calPickedCell) showCell(calPickedCell, true);
+}
+function showCell(key, keepScroll) {
+  calPickedCell = key;
+  document.querySelectorAll('[data-cell]').forEach((c) => c.classList.toggle('picked', c.dataset.cell === key));
+  const [date, hourStr] = key.split('|');
+  const hour = Number(hourStr);
+  const list = (calData.bookings || []).filter((b) => b.date === date && b.hour === hour);
+  const day = calData.days.find((x) => x.date === date) || {};
+  const cars = list.filter((b) => b.vehicle === 'car').reduce((s, b) => s + (b.cars || 0), 0);
+  const head = `<div class="cal-detail-head">${esc(date)}(${esc(day.weekday || '')})・${String(hour).padStart(2, '0')}:00
+      <span class="stat">汽車 ${cars}/${calData.capacity} 台・${list.length} 組</span></div>`;
+  $('calDetail').innerHTML = head + (list.length
+    ? `<div class="blist">${list.map(bookingRow).join('')}</div>`
+    : '<p class="note" style="text-align:center;padding:16px 0">這個時段還沒有人預約 🍓</p>');
+  if (list.length) bindRowActions();
+  if (!keepScroll) focusInto($('calDetail'), { block: 'nearest' });
+}
+// 「及時」:停在週曆分頁時每 45 秒靜默更新一次,離開分頁就停掉
+function calAutoRefresh(on) {
+  clearInterval(calTimer);
+  calTimer = on ? setInterval(() => {
+    if (document.hidden || $('tab-calendar').hidden) return;
+    loadCalendar(calMonday, { silent: true });
+  }, 45000) : null;
+}
 
 // ---- 預約名單(列卡,手機單手可用) ----
 function bookingRow(b) {
@@ -628,6 +727,9 @@ $('todayBtn').addEventListener('click', () => { $('filterDate').value = todayStr
 $('clearFilter').addEventListener('click', () => { $('filterDate').value = ''; loadBookings(); });
 $('refreshBtn').addEventListener('click', () => { loadBookings(); loadTodayStats(); });
 $('exportBtn').addEventListener('click', exportCsv);
+$('calPrev').addEventListener('click', () => loadCalendar(shiftDays(calMonday, -7)));
+$('calNext').addEventListener('click', () => loadCalendar(shiftDays(calMonday, 7)));
+$('calToday').addEventListener('click', () => loadCalendar(mondayOfLocal(todayStr())));
 $('pickBtn').addEventListener('click', togglePickMode);
 $('saveCfg').addEventListener('click', saveConfig);
 $('saveLine').addEventListener('click', saveLine);

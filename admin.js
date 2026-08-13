@@ -519,8 +519,13 @@ async function newBooking() {
   if (!date) { banner($('nbBanner'), 'err', '請選擇日期'); return; }
   if (!name) { banner($('nbBanner'), 'err', '請填寫姓名'); return; }
   if (!phone) { banner($('nbBanner'), 'err', '請填寫電話'); return; }
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (!/^0\d{9}$/.test(phoneDigits)) {
+    banner($('nbBanner'), 'err', `電話要 10 碼(例:0912345678),目前是 ${phoneDigits.length} 碼`);
+    $('nbPhone').focus(); return;
+  }
   const btn = $('nbSubmit'); btn.disabled = true;
-  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone }, { msg: '新增中…' });
+  const { ok, data } = await adminPost('adminBook', { date, hour, vehicle, cars, name, phone: phoneDigits }, { msg: '新增中…' });
   btn.disabled = false;
   if (!ok) { banner($('nbBanner'), 'err', esc(data.error || '新增失敗')); return; }
   banner($('nbBanner'), 'ok', `已新增 ${esc(name)} 的預約 ✅${data.notified ? ',確認通知已發到你的 LINE 📱' : ''}`);

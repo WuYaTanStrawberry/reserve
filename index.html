@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.line-scdn.net https://*.line-scdn.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.line-scdn.net; connect-src 'self' https://api.wuyatanstrawberry.com https://*.line.me https://*.line-scdn.net; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.line-scdn.net https://*.line-scdn.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.line-scdn.net; connect-src 'self' https://api.wuyatanstrawberry.com https://*.line.me https://*.line-scdn.net https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>🍓 舞夜天高架草莓園｜停車預約</title>
   <meta name="theme-color" content="#fff7f8">
   <link rel="icon" href="icon.png">
@@ -68,6 +68,8 @@
 
           <input type="text" id="hp_field" name="nickname" tabindex="-1" autocomplete="off" aria-hidden="true"
                  class="sr-only">
+          <!-- 人機驗證:後台沒填 Turnstile 金鑰時整塊都不會出現 -->
+          <div id="tsBox" hidden><div id="tsWidget"></div></div>
           <button class="primary" id="submitBtn" type="submit">送出預約</button>
         </div>
       </form>

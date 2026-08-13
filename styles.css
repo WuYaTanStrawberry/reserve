@@ -69,6 +69,48 @@
 /* hidden 屬性一律優先於任何 display 設定(否則 .modal 的 display:flex 會蓋掉 hidden) */
 [hidden] { display: none !important; }
 
+/* ---- 週曆總覽 ---- */
+/* 手機 375px:時間欄 30px + 7 天,每格約 45px。格子裡只放一個數字,所以夠用 */
+.cal-nav { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.cal-range { flex: 1; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* 一眼看完整週是這個功能的重點,所以寧可格子小一點也不要左右滑 */
+.cal-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#calGrid { min-width: 0; }
+.cal-row { display: grid; grid-template-columns: 26px repeat(7, 1fr); gap: 2px; margin-bottom: 2px; }
+.cal-time { display: flex; align-items: center; justify-content: flex-end; padding-right: 4px;
+  font-size: .7rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cal-head .cal-day { text-align: center; padding: 4px 0; border-radius: var(--r-1); line-height: 1.15; }
+.cal-head .cal-day b { display: block; font-size: .8rem; }
+.cal-head .cal-day span { font-size: .62rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cal-head .is-today { background: var(--berry); color: #fff; }
+.cal-head .is-today span { color: #fff; opacity: .85; }
+.cal-head .is-past { opacity: .45; }
+
+.cal-cell { position: relative; min-height: 40px; border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--surface); font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--ink-1); cursor: pointer; padding: 0; }
+.cal-cell.lv0 { color: var(--ink-3); font-weight: 400; }
+.cal-cell.lv1 { background: var(--ok-bg); border-color: var(--ok-line); }
+.cal-cell.lv2 { background: var(--warn-bg); border-color: var(--warn-line); }
+.cal-cell.lv3 { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger-ink); }
+.cal-cell.is-closed { display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); color: var(--ink-3); border-style: dashed; cursor: default; }
+.cal-cell.is-past { opacity: .5; }
+.cal-cell.picked { outline: 2px solid var(--berry); outline-offset: 1px; }
+.cal-cell .moto { position: absolute; right: 1px; bottom: 0; font-size: .55rem; font-style: normal; }
+
+.cal-legend { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+  margin: var(--sp-3) 0 0; font-size: .72rem; color: var(--ink-3); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.cal-legend .dot { width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--line); }
+.cal-legend .lv1 { background: var(--ok-bg); border-color: var(--ok-line); }
+.cal-legend .lv2 { background: var(--warn-bg); border-color: var(--warn-line); }
+.cal-legend .lv3 { background: var(--danger-bg); border-color: var(--danger-line); }
+.cal-legend .cal-hint { margin-left: auto; }
+.cal-detail-head { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap;
+  margin: var(--sp-4) 0 var(--sp-2); font-weight: 600; }
+#calDetail .stat { margin: 0; }
+
 /* 多選模式的核取方塊:手指要好按,所以給滿 44px 的觸控範圍 */
 .pickbox { display: inline-flex; align-items: center; justify-content: center;
   min-width: 44px; min-height: 44px; margin: -10px 4px -10px -10px; cursor: pointer; }

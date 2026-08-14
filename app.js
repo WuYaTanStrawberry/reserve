@@ -7,6 +7,7 @@ let capacity = 9;
 let mode = 'book';        // 'book' 或 'waitlist'
 let lineUserId = '';
 let curData = null;       // 目前這天的 availability
+let curCfg = null;        // 公開設定(給 LINE 引導頁用)
 
 const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -21,17 +22,48 @@ function updateVehUI() {
   $('carQtyWrap').hidden = !isCar;
 }
 
+let lineIdToken = '';     // LINE 發的身分憑證,送給後端驗證(前端自報的 userId 不被採信)
+let lineReady = false;    // LIFF 已初始化完成
+let isFriend = null;      // null=未知 / true=已加好友 / false=尚未加好友
+
 // LIFF 背景初始化:不擋頁面載入
 function initLiff(liffId) {
-  if (!liffId || !window.liff || initLiff.done) return;
+  if (!liffId || !window.liff || initLiff.done) return Promise.resolve();
   initLiff.done = true;
-  liff.init({ liffId }).then(async () => {
+  return liff.init({ liffId }).then(async () => {
+    lineReady = true;
     if (liff.isLoggedIn()) {
       const prof = await liff.getProfile();
       lineUserId = prof.userId;
+      lineIdToken = liff.getIDToken() || '';
       if (prof.displayName && !$('name').value) $('name').value = prof.displayName;
+      // 有沒有加官方帳號好友,跟「有沒有 LINE 身分」是兩回事
+      try { const f = await liff.getFriendship(); isFriend = !!(f && f.friendFlag); }
+      catch (e) { isFriend = null; }
     }
-  }).catch(() => { /* 非 LINE 環境,忽略 */ });
+  }).catch(() => { /* 非 LINE 環境 */ });
+}
+
+// 需要 LINE 才能預約時,擋在最前面並給出路(加好友 / 打電話)
+function renderLineGate(cfg) {
+  const add = cfg.lineAddUrl || 'https://lin.ee/St0DnWH';
+  const tel = (cfg.contactPhone || '').trim();
+  const notFriend = lineReady && lineUserId && isFriend === false;
+  document.querySelector('.wrap').innerHTML = `
+    <div class="card">
+      <div class="success-box">
+        <span class="big">💚</span>
+        <h2>${notFriend ? '再一步就完成了' : '請從 LINE 預約'}</h2>
+        <p>${notFriend
+          ? '你已經在 LINE 裡了,只要加入我們的官方帳號好友就能訂位。'
+          : '我們的訂位只開放給 LINE 官方帳號的好友,這樣才能在預約成功、前一天提醒時通知你 🍓'}</p>
+      </div>
+      <a class="primary" href="${escHtml(safeUrl(add))}">加入好友並開始預約</a>
+      <p class="note">加入後,請從官方帳號下方的<b>圖文選單</b>點「立即訂位」。</p>
+      ${tel ? `<hr class="sep">
+        <p class="banner info" style="margin-bottom:8px">不方便使用 LINE 嗎?直接打電話給我們也可以 👇</p>
+        <a class="primary secondary" href="tel:${escHtml(tel.replace(/[^0-9+]/g, ''))}">📞 ${escHtml(tel)}</a>` : ''}
+    </div>`;
 }
 
 async function init() {
@@ -56,8 +88,14 @@ async function init() {
   if (config && config.capacity) {
     localStorage.setItem('cfgCache', JSON.stringify(config));
     capacity = config.capacity;
-    initLiff(config.liffId);
+    curCfg = config;
+    // 要擋非 LINE 客人時必須等 LIFF 問完,否則會在還不知道身分時就誤擋
+    if (config.requireLine) await initLiff(config.liffId);
+    else initLiff(config.liffId);
     initTurnstile(config.turnstileSiteKey);
+    // isFriend 為 null 代表問不到(舊版 LINE 等),此時不擋——寧可放行也不要誤擋真客人,
+    // 反正後端還會再用 LINE 官方 API 確認一次是不是好友
+    if (config.requireLine && !(lineUserId && isFriend !== false)) { renderLineGate(config); return; }
   }
 }
 
@@ -281,12 +319,13 @@ async function submit() {
   const msg = mode === 'waitlist' ? '加入候補中…' : '送出預約中…';
 
   if (mode === 'waitlist') {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone: phoneDigits, date, hour: selectedHour, cars, lineUserId, hp, cfToken }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'joinWaitlist', name, phone: phoneDigits, date, hour: selectedHour, cars, lineUserId, lineIdToken, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       banner($('formBanner'), 'err', offline ? '連不上訂位系統,沒送出去。請確認你的網路後再按一次 🙏'
         : badResponse ? '訂位系統剛才忙線,沒送出去(跟你的網路無關),請再按一次 🙏'
         : escHtml(data.error || '加入候補失敗'));
+      if (data.needLine) { renderLineGate(curCfg || {}); return; }
       focusInto($('formBanner'), { block: 'center' });
       tsReset();
       return;
@@ -294,13 +333,14 @@ async function submit() {
     dropCache(date);
     showWaitlistSuccess(date);
   } else {
-    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone: phoneDigits, date, hour: selectedHour, vehicle, cars, lineUserId, hp, cfToken }, { msg });
+    const { ok, data, offline, badResponse } = await gasPost({ action: 'book', name, phone: phoneDigits, date, hour: selectedHour, vehicle, cars, lineUserId, lineIdToken, hp, cfToken }, { msg });
     btn.disabled = false;
     if (!ok) {
       // 保留表單與錯誤訊息(不可呼叫 loadDay,那會把整個表單連同訊息一起隱藏)
       banner($('formBanner'), 'err', offline ? '連不上訂位系統,沒送出去。請確認你的網路後再按一次 🙏'
         : badResponse ? '訂位系統剛才忙線,沒送出去(跟你的網路無關),請再按一次 🙏'
         : escHtml(data.error || '預約失敗,請稍後再試'));
+      if (data.needLine) { renderLineGate(curCfg || {}); return; }
       focusInto($('formBanner'), { block: 'center' });
       tsReset();
       dropCache(date);
